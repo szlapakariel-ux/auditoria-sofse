@@ -1,0 +1,705 @@
+[
+  {
+    "id_mensaje": "649224",
+    "numero_mensaje": "00649224",
+    "fecha": "14/01/2026",
+    "hora": "11:39:13",
+    "fecha_hora": "14/01/2026 11:39:13",
+    "linea": "Línea Roca",
+    "criticidad": "IMPORTANTE",
+    "tipificacion": "CANCELACIÓN",
+    "estado": "Nuevo",
+    "contenido": "3.2.A EL TREN 4516 DE LAS 13.20HS. PARTIENDO DESDE HAEDO HACIA TEMPERLEY HA SIDO CANCELADO POR PROB. TECNICOS.",
+    "operador": "Branco Spinetti",
+    "grupos": [
+      "ADROGUE ESTACIONES",
+      "ROCA GERNERAL",
+      "BANFIELD ESTACIONES",
+      "ARDIGO ESTACIONES",
+      "RAFAEL CALZADA ESTACIONES",
+      "SOFSE GCIA.GRAL.COMERCIAL",
+      "AREAS COMPLEMENTARIAS GENERAL",
+      "FLORENCIO VARELA",
+      "PRENSA",
+      "BERAZATEGUI ESTACIONES",
+      "BERNAL ESTACIONES",
+      "BURZACO ESTACIONES",
+      "CAÑUELAS ESTACIONES",
+      "CITY BELL ESTACIONES",
+      "CLAYPOLE ESTACIONES",
+      "CONSTITUCIÓN ESTACIONES",
+      "D. SANTILLÁN Y M. KOSTEKI",
+      "DON BOSCO ESTACIONES",
+      "EZEIZA ESTACIONES",
+      "GLEW ESTACIONES",
+      "GONNET ESTACIONES",
+      "HAEDO ESTACIONES",
+      "HUDSON ESTACIONES",
+      "JOSÉ MÁRMOL ESTACIONES",
+      "LUIS GUILLÓN",
+      "J. M. GUTIERREZ ESTACIONES",
+      "LA PLATA ESTACIONES",
+      "LANUS ESTACIONES",
+      "LLAVALLOL ESTACIONES",
+      "LOMAS DE ZAMORA",
+      "MAXIMO PAZ ESTACIONES",
+      "MONTE GRANDE ESTACIONES",
+      "PLATANOS ESTACIONES",
+      "QUILMES ESTACIONES",
+      "REMEDIOS DE ESCALADA",
+      "RANELAGH ESTACIONES",
+      "RINGUELET ESTACIONES",
+      "SAN JUSTO ESTACIONES",
+      "SANTA SOFIA ESTACIONES",
+      "SARANDI ESTACIONES",
+      "SOURIGUES ESTACIONES",
+      "SPEGAZZINI ESTACIONES",
+      "TEMPERLEY ESTACIONES",
+      "TRANSPORTE",
+      "TOLOSA ESTACIONES",
+      "TRISTAN SUAREZ ESTACIONES",
+      "TURDERA ESTACIONES",
+      "VICENTE CASARES ESTACIONES",
+      "VILLA DOMINICO ESTACIONES",
+      "VILLA ELISA ESTACIONES",
+      "VILLA ESPAÑA ESTACIONES",
+      "WILDE ESTACIONES",
+      "HIPOLITO YRIGOYEN ESTACIONES",
+      "ZEBALLOS ESTACIONES",
+      "ALEJANDRO KORN ESTACIONES",
+      "ALEJANDRO PETION ESTACIONES"
+    ],
+    "estado_sms": "",
+    "estado_email": "",
+    "area_id": 23,
+    "analisis": {
+      "numero_mensaje": "00649224",
+      "operador": "Branco Spinetti",
+      "fecha_hora": "14/01/2026 11:39:13",
+      "linea": "Línea Roca",
+      "contenido": "3.2.A EL TREN 4516 DE LAS 13.20HS. PARTIENDO DESDE HAEDO HACIA TEMPERLEY HA SIDO CANCELADO POR PROB. TECNICOS.",
+      "tipo_mensaje": "TREN_ESPECIFICO",
+      "componentes": {
+        "tipo_mensaje": "TREN_ESPECIFICO",
+        "A": "4516",
+        "B": {
+          "estado": "CANCELACIÓN",
+          "codigo": "2",
+          "estructura_formal": true
+        },
+        "C": {
+          "codigo": "03",
+          "forma_comunicacion": "TECNICOS"
+        },
+        "D": "13:20",
+        "E": {
+          "origen": "HAEDO",
+          "destino": "TEMPERLEY"
+        },
+        "F": "3.2.A",
+        "estructura_valida": true,
+        "ortografia_valida": true,
+        "errores_ortografia": []
+      },
+      "clasificacion": {
+        "IMPORTANTE": [],
+        "OBSERVACIONES": [],
+        "SUGERENCIAS": []
+      },
+      "nivel_general": "COMPLETO",
+      "timing": {
+        "tardanza_minutos": -100.8,
+        "clasificacion": "OPORTUNO",
+        "nivel": "ACEPTABLE",
+        "hora_programada": "13:20",
+        "minutos_demora": 0,
+        "hora_referencia": "13:20",
+        "hora_envio": "11:39:13",
+        "es_cancelacion": true
+      },
+      "scores": {
+        "componentes": {
+          "clasificacion": "COMPLETO",
+          "detalles": []
+        },
+        "timing": {
+          "clasificacion": "EXCELENTE",
+          "detalles": [
+            "Enviado 101 min antes (cancelación/suspensión)"
+          ]
+        },
+        "estructura": {
+          "clasificacion": "IMPECABLE",
+          "detalles": []
+        }
+      },
+      "requiere_notificacion": false
+    }
+  },
+  {
+    "id_mensaje": "649223",
+    "numero_mensaje": "00649223",
+    "fecha": "14/01/2026",
+    "hora": "11:38:51",
+    "fecha_hora": "14/01/2026 11:38:51",
+    "linea": "Línea Roca",
+    "criticidad": "IMPORTANTE",
+    "tipificacion": "CANCELACIÓN",
+    "estado": "Nuevo",
+    "contenido": "3.2.A EL TREN 4515 DE LAS 11.40HS. PARTIENDO DESDE TEMPERLEY HACIA HAEDO HA SIDO CANCELADO POR PROB. TECNICOS.",
+    "operador": "Branco Spinetti",
+    "grupos": [
+      "ADROGUE ESTACIONES",
+      "ROCA GERNERAL",
+      "BANFIELD ESTACIONES",
+      "ARDIGO ESTACIONES",
+      "RAFAEL CALZADA ESTACIONES",
+      "SOFSE GCIA.GRAL.COMERCIAL",
+      "AREAS COMPLEMENTARIAS GENERAL",
+      "FLORENCIO VARELA",
+      "PRENSA",
+      "BERAZATEGUI ESTACIONES",
+      "BERNAL ESTACIONES",
+      "BURZACO ESTACIONES",
+      "CAÑUELAS ESTACIONES",
+      "CITY BELL ESTACIONES",
+      "CLAYPOLE ESTACIONES",
+      "CONSTITUCIÓN ESTACIONES",
+      "D. SANTILLÁN Y M. KOSTEKI",
+      "DON BOSCO ESTACIONES",
+      "EZEIZA ESTACIONES",
+      "GLEW ESTACIONES",
+      "GONNET ESTACIONES",
+      "HAEDO ESTACIONES",
+      "HUDSON ESTACIONES",
+      "JOSÉ MÁRMOL ESTACIONES",
+      "LUIS GUILLÓN",
+      "J. M. GUTIERREZ ESTACIONES",
+      "LA PLATA ESTACIONES",
+      "LANUS ESTACIONES",
+      "LLAVALLOL ESTACIONES",
+      "LOMAS DE ZAMORA",
+      "MAXIMO PAZ ESTACIONES",
+      "MONTE GRANDE ESTACIONES",
+      "PLATANOS ESTACIONES",
+      "QUILMES ESTACIONES",
+      "REMEDIOS DE ESCALADA",
+      "RANELAGH ESTACIONES",
+      "RINGUELET ESTACIONES",
+      "SAN JUSTO ESTACIONES",
+      "SANTA SOFIA ESTACIONES",
+      "SARANDI ESTACIONES",
+      "SOURIGUES ESTACIONES",
+      "SPEGAZZINI ESTACIONES",
+      "TEMPERLEY ESTACIONES",
+      "TRANSPORTE",
+      "TOLOSA ESTACIONES",
+      "TRISTAN SUAREZ ESTACIONES",
+      "TURDERA ESTACIONES",
+      "VICENTE CASARES ESTACIONES",
+      "VILLA DOMINICO ESTACIONES",
+      "VILLA ELISA ESTACIONES",
+      "VILLA ESPAÑA ESTACIONES",
+      "WILDE ESTACIONES",
+      "HIPOLITO YRIGOYEN ESTACIONES",
+      "ZEBALLOS ESTACIONES",
+      "ALEJANDRO KORN ESTACIONES",
+      "ALEJANDRO PETION ESTACIONES"
+    ],
+    "estado_sms": "",
+    "estado_email": "",
+    "area_id": 23,
+    "analisis": {
+      "numero_mensaje": "00649223",
+      "operador": "Branco Spinetti",
+      "fecha_hora": "14/01/2026 11:38:51",
+      "linea": "Línea Roca",
+      "contenido": "3.2.A EL TREN 4515 DE LAS 11.40HS. PARTIENDO DESDE TEMPERLEY HACIA HAEDO HA SIDO CANCELADO POR PROB. TECNICOS.",
+      "tipo_mensaje": "TREN_ESPECIFICO",
+      "componentes": {
+        "tipo_mensaje": "TREN_ESPECIFICO",
+        "A": "4515",
+        "B": {
+          "estado": "CANCELACIÓN",
+          "codigo": "2",
+          "estructura_formal": true
+        },
+        "C": {
+          "codigo": "03",
+          "forma_comunicacion": "TECNICOS"
+        },
+        "D": "11:40",
+        "E": {
+          "origen": "TEMPERLEY",
+          "destino": "HAEDO"
+        },
+        "F": "3.2.A",
+        "estructura_valida": true,
+        "ortografia_valida": true,
+        "errores_ortografia": []
+      },
+      "clasificacion": {
+        "IMPORTANTE": [],
+        "OBSERVACIONES": [],
+        "SUGERENCIAS": []
+      },
+      "nivel_general": "COMPLETO",
+      "timing": {
+        "tardanza_minutos": -1.1,
+        "clasificacion": "OPORTUNO",
+        "nivel": "ACEPTABLE",
+        "hora_programada": "11:40",
+        "minutos_demora": 0,
+        "hora_referencia": "11:40",
+        "hora_envio": "11:38:51",
+        "es_cancelacion": true
+      },
+      "scores": {
+        "componentes": {
+          "clasificacion": "COMPLETO",
+          "detalles": []
+        },
+        "timing": {
+          "clasificacion": "EXCELENTE",
+          "detalles": [
+            "Enviado 1 min antes del horario"
+          ]
+        },
+        "estructura": {
+          "clasificacion": "IMPECABLE",
+          "detalles": []
+        }
+      },
+      "requiere_notificacion": false
+    }
+  },
+  {
+    "id_mensaje": "649212",
+    "numero_mensaje": "00649212",
+    "fecha": "14/01/2026",
+    "hora": "10:52:21",
+    "fecha_hora": "14/01/2026 10:52:21",
+    "linea": "Línea Roca",
+    "criticidad": "IMPORTANTE",
+    "tipificacion": "CANCELACIÓN",
+    "estado": "Nuevo",
+    "contenido": "5.2.A-  EL TREN 5436 DE LAS 10.49HS. DESDE ALEJANDRO KORN HACIA CONSTITUCION HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+    "operador": "Branco Spinetti",
+    "grupos": [
+      "ADROGUE ESTACIONES",
+      "ROCA GERNERAL",
+      "BANFIELD ESTACIONES",
+      "ARDIGO ESTACIONES",
+      "RAFAEL CALZADA ESTACIONES",
+      "SOFSE GCIA.GRAL.COMERCIAL",
+      "AREAS COMPLEMENTARIAS GENERAL",
+      "FLORENCIO VARELA",
+      "PRENSA",
+      "BERAZATEGUI ESTACIONES",
+      "BERNAL ESTACIONES",
+      "BOSQUES ESTACIONES",
+      "BURZACO ESTACIONES",
+      "CAÑUELAS ESTACIONES",
+      "CITY BELL ESTACIONES",
+      "CLAYPOLE ESTACIONES",
+      "CONSTITUCIÓN ESTACIONES",
+      "D. SANTILLÁN Y M. KOSTEKI",
+      "DON BOSCO ESTACIONES",
+      "EL JAGÜEL ESTACIONES",
+      "EZEIZA ESTACIONES",
+      "EZPELETA ESTACIONES",
+      "GERLI ESTACIONES",
+      "GLEW ESTACIONES",
+      "GONNET ESTACIONES",
+      "GUERNICA ESTACIONES",
+      "HAEDO ESTACIONES",
+      "HUDSON ESTACIONES",
+      "JOSÉ MÁRMOL ESTACIONES",
+      "LUIS GUILLÓN",
+      "J. M. GUTIERREZ ESTACIONES",
+      "LA PLATA ESTACIONES",
+      "LANUS ESTACIONES",
+      "LLAVALLOL ESTACIONES",
+      "LOMAS DE ZAMORA",
+      "LONGCHAMPS",
+      "MAXIMO PAZ ESTACIONES",
+      "MONTE GRANDE ESTACIONES",
+      "PLATANOS ESTACIONES",
+      "QUILMES ESTACIONES",
+      "REMEDIOS DE ESCALADA",
+      "RANELAGH ESTACIONES",
+      "RINGUELET ESTACIONES",
+      "SAN JUSTO ESTACIONES",
+      "SANTA SOFIA ESTACIONES",
+      "SARANDI ESTACIONES",
+      "SOURIGUES ESTACIONES",
+      "SPEGAZZINI ESTACIONES",
+      "TEMPERLEY ESTACIONES",
+      "TRANSPORTE",
+      "TOLOSA ESTACIONES",
+      "TRISTAN SUAREZ ESTACIONES",
+      "TURDERA ESTACIONES",
+      "VICENTE CASARES ESTACIONES",
+      "VILLA DOMINICO ESTACIONES",
+      "VILLA ELISA ESTACIONES",
+      "VILLA ESPAÑA ESTACIONES",
+      "WILDE ESTACIONES",
+      "HIPOLITO YRIGOYEN ESTACIONES",
+      "ZEBALLOS ESTACIONES",
+      "ALEJANDRO KORN ESTACIONES",
+      "ALEJANDRO PETION ESTACIONES"
+    ],
+    "estado_sms": "",
+    "estado_email": "",
+    "area_id": 23,
+    "analisis": {
+      "numero_mensaje": "00649212",
+      "operador": "Branco Spinetti",
+      "fecha_hora": "14/01/2026 10:52:21",
+      "linea": "Línea Roca",
+      "contenido": "5.2.A-  EL TREN 5436 DE LAS 10.49HS. DESDE ALEJANDRO KORN HACIA CONSTITUCION HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+      "tipo_mensaje": "TREN_ESPECIFICO",
+      "componentes": {
+        "tipo_mensaje": "TREN_ESPECIFICO",
+        "A": "5436",
+        "B": {
+          "estado": "CANCELACIÓN",
+          "codigo": "2",
+          "estructura_formal": true
+        },
+        "C": {
+          "codigo": "05",
+          "forma_comunicacion": "PROBLEMAS OPERATIVOS"
+        },
+        "D": "10:49",
+        "E": {
+          "origen": "ALEJANDRO KORN",
+          "destino": "CONSTITUCION"
+        },
+        "F": "5.2.A",
+        "estructura_valida": true,
+        "ortografia_valida": true,
+        "errores_ortografia": []
+      },
+      "clasificacion": {
+        "IMPORTANTE": [],
+        "OBSERVACIONES": [],
+        "SUGERENCIAS": []
+      },
+      "nivel_general": "COMPLETO",
+      "timing": {
+        "tardanza_minutos": 3.4,
+        "clasificacion": "OPORTUNO",
+        "nivel": "ACEPTABLE",
+        "hora_programada": "10:49",
+        "minutos_demora": 0,
+        "hora_referencia": "10:49",
+        "hora_envio": "10:52:21",
+        "es_cancelacion": true
+      },
+      "scores": {
+        "componentes": {
+          "clasificacion": "COMPLETO",
+          "detalles": []
+        },
+        "timing": {
+          "clasificacion": "BUENO",
+          "detalles": [
+            "Enviado 3 min después del horario"
+          ]
+        },
+        "estructura": {
+          "clasificacion": "IMPECABLE",
+          "detalles": []
+        }
+      },
+      "requiere_notificacion": false
+    }
+  },
+  {
+    "id_mensaje": "649205",
+    "numero_mensaje": "00649205",
+    "fecha": "14/01/2026",
+    "hora": "10:34:32",
+    "fecha_hora": "14/01/2026 10:34:32",
+    "linea": "Línea Roca",
+    "criticidad": "IMPORTANTE",
+    "tipificacion": "CANCELACIÓN",
+    "estado": "Nuevo",
+    "contenido": "5.2.A-  EL TREN 5436 DE LAS 10.49 HS. DESDE ALEJANDRO KORN HACIA CONSTITUCION HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+    "operador": "Mariano Alberto Leonardis",
+    "grupos": [
+      "ADROGUE ESTACIONES",
+      "ROCA GERNERAL",
+      "BANFIELD ESTACIONES",
+      "ARDIGO ESTACIONES",
+      "RAFAEL CALZADA ESTACIONES",
+      "SOFSE GCIA.GRAL.COMERCIAL",
+      "AREAS COMPLEMENTARIAS GENERAL",
+      "FLORENCIO VARELA",
+      "PRENSA",
+      "BERAZATEGUI ESTACIONES",
+      "BERNAL ESTACIONES",
+      "BOSQUES ESTACIONES",
+      "BURZACO ESTACIONES",
+      "CAÑUELAS ESTACIONES",
+      "CITY BELL ESTACIONES",
+      "CLAYPOLE ESTACIONES",
+      "CONSTITUCIÓN ESTACIONES",
+      "D. SANTILLÁN Y M. KOSTEKI",
+      "DON BOSCO ESTACIONES",
+      "EL JAGÜEL ESTACIONES",
+      "EZEIZA ESTACIONES",
+      "EZPELETA ESTACIONES",
+      "GERLI ESTACIONES",
+      "GLEW ESTACIONES",
+      "GONNET ESTACIONES",
+      "GUERNICA ESTACIONES",
+      "HAEDO ESTACIONES",
+      "HUDSON ESTACIONES",
+      "JOSÉ MÁRMOL ESTACIONES",
+      "LUIS GUILLÓN",
+      "J. M. GUTIERREZ ESTACIONES",
+      "LA PLATA ESTACIONES",
+      "LANUS ESTACIONES",
+      "LLAVALLOL ESTACIONES",
+      "LOMAS DE ZAMORA",
+      "LONGCHAMPS",
+      "MAXIMO PAZ ESTACIONES",
+      "MONTE GRANDE ESTACIONES",
+      "PLATANOS ESTACIONES",
+      "QUILMES ESTACIONES",
+      "REMEDIOS DE ESCALADA",
+      "RANELAGH ESTACIONES",
+      "RINGUELET ESTACIONES",
+      "SAN JUSTO ESTACIONES",
+      "SANTA SOFIA ESTACIONES",
+      "SARANDI ESTACIONES",
+      "SOURIGUES ESTACIONES",
+      "SPEGAZZINI ESTACIONES",
+      "TEMPERLEY ESTACIONES",
+      "TRANSPORTE",
+      "TOLOSA ESTACIONES",
+      "TRISTAN SUAREZ ESTACIONES",
+      "TURDERA ESTACIONES",
+      "VICENTE CASARES ESTACIONES",
+      "VILLA DOMINICO ESTACIONES",
+      "VILLA ELISA ESTACIONES",
+      "VILLA ESPAÑA ESTACIONES",
+      "WILDE ESTACIONES",
+      "HIPOLITO YRIGOYEN ESTACIONES",
+      "ZEBALLOS ESTACIONES",
+      "ALEJANDRO KORN ESTACIONES",
+      "ALEJANDRO PETION ESTACIONES"
+    ],
+    "estado_sms": "",
+    "estado_email": "",
+    "area_id": 23,
+    "analisis": {
+      "numero_mensaje": "00649205",
+      "operador": "Mariano Alberto Leonardis",
+      "fecha_hora": "14/01/2026 10:34:32",
+      "linea": "Línea Roca",
+      "contenido": "5.2.A-  EL TREN 5436 DE LAS 10.49 HS. DESDE ALEJANDRO KORN HACIA CONSTITUCION HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+      "tipo_mensaje": "TREN_ESPECIFICO",
+      "componentes": {
+        "tipo_mensaje": "TREN_ESPECIFICO",
+        "A": "5436",
+        "B": {
+          "estado": "CANCELACIÓN",
+          "codigo": "2",
+          "estructura_formal": true
+        },
+        "C": {
+          "codigo": "05",
+          "forma_comunicacion": "PROBLEMAS OPERATIVOS"
+        },
+        "D": "10:49",
+        "E": {
+          "origen": "ALEJANDRO KORN",
+          "destino": "CONSTITUCION"
+        },
+        "F": "5.2.A",
+        "estructura_valida": true,
+        "ortografia_valida": true,
+        "errores_ortografia": []
+      },
+      "clasificacion": {
+        "IMPORTANTE": [],
+        "OBSERVACIONES": [],
+        "SUGERENCIAS": []
+      },
+      "nivel_general": "COMPLETO",
+      "timing": {
+        "tardanza_minutos": -14.5,
+        "clasificacion": "OPORTUNO",
+        "nivel": "ACEPTABLE",
+        "hora_programada": "10:49",
+        "minutos_demora": 0,
+        "hora_referencia": "10:49",
+        "hora_envio": "10:34:32",
+        "es_cancelacion": true
+      },
+      "scores": {
+        "componentes": {
+          "clasificacion": "COMPLETO",
+          "detalles": []
+        },
+        "timing": {
+          "clasificacion": "EXCELENTE",
+          "detalles": [
+            "Enviado 14 min antes (cancelación/suspensión)"
+          ]
+        },
+        "estructura": {
+          "clasificacion": "IMPECABLE",
+          "detalles": []
+        }
+      },
+      "requiere_notificacion": false
+    }
+  },
+  {
+    "id_mensaje": "649182",
+    "numero_mensaje": "00649182",
+    "fecha": "14/01/2026",
+    "hora": "09:07:19",
+    "fecha_hora": "14/01/2026 09:07:19",
+    "linea": "Línea Roca",
+    "criticidad": "IMPORTANTE",
+    "tipificacion": "CANCELACIÓN",
+    "estado": "Nuevo",
+    "contenido": "5.2.A-  EL TREN 5395 DE LAS 09.19 HS. DESDE CONSTITUCION HACIA ALEJANDRO KORN HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+    "operador": "Mariano Alberto Leonardis",
+    "grupos": [
+      "ADROGUE ESTACIONES",
+      "ROCA GERNERAL",
+      "BANFIELD ESTACIONES",
+      "ARDIGO ESTACIONES",
+      "RAFAEL CALZADA ESTACIONES",
+      "SOFSE GCIA.GRAL.COMERCIAL",
+      "AREAS COMPLEMENTARIAS GENERAL",
+      "FLORENCIO VARELA",
+      "PRENSA",
+      "BERAZATEGUI ESTACIONES",
+      "BERNAL ESTACIONES",
+      "BOSQUES ESTACIONES",
+      "BURZACO ESTACIONES",
+      "CAÑUELAS ESTACIONES",
+      "CITY BELL ESTACIONES",
+      "CLAYPOLE ESTACIONES",
+      "CONSTITUCIÓN ESTACIONES",
+      "D. SANTILLÁN Y M. KOSTEKI",
+      "DON BOSCO ESTACIONES",
+      "EL JAGÜEL ESTACIONES",
+      "EZEIZA ESTACIONES",
+      "EZPELETA ESTACIONES",
+      "GERLI ESTACIONES",
+      "GLEW ESTACIONES",
+      "GONNET ESTACIONES",
+      "GUERNICA ESTACIONES",
+      "HAEDO ESTACIONES",
+      "HUDSON ESTACIONES",
+      "JOSÉ MÁRMOL ESTACIONES",
+      "LUIS GUILLÓN",
+      "J. M. GUTIERREZ ESTACIONES",
+      "LA PLATA ESTACIONES",
+      "LANUS ESTACIONES",
+      "LLAVALLOL ESTACIONES",
+      "LOMAS DE ZAMORA",
+      "LONGCHAMPS",
+      "MAXIMO PAZ ESTACIONES",
+      "MONTE GRANDE ESTACIONES",
+      "PLATANOS ESTACIONES",
+      "QUILMES ESTACIONES",
+      "REMEDIOS DE ESCALADA",
+      "RANELAGH ESTACIONES",
+      "RINGUELET ESTACIONES",
+      "SAN JUSTO ESTACIONES",
+      "SANTA SOFIA ESTACIONES",
+      "SARANDI ESTACIONES",
+      "SOURIGUES ESTACIONES",
+      "SPEGAZZINI ESTACIONES",
+      "TEMPERLEY ESTACIONES",
+      "TRANSPORTE",
+      "TOLOSA ESTACIONES",
+      "TRISTAN SUAREZ ESTACIONES",
+      "TURDERA ESTACIONES",
+      "VICENTE CASARES ESTACIONES",
+      "VILLA DOMINICO ESTACIONES",
+      "VILLA ELISA ESTACIONES",
+      "VILLA ESPAÑA ESTACIONES",
+      "WILDE ESTACIONES",
+      "HIPOLITO YRIGOYEN ESTACIONES",
+      "ZEBALLOS ESTACIONES",
+      "ALEJANDRO KORN ESTACIONES",
+      "ALEJANDRO PETION ESTACIONES"
+    ],
+    "estado_sms": "",
+    "estado_email": "",
+    "area_id": 23,
+    "analisis": {
+      "numero_mensaje": "00649182",
+      "operador": "Mariano Alberto Leonardis",
+      "fecha_hora": "14/01/2026 09:07:19",
+      "linea": "Línea Roca",
+      "contenido": "5.2.A-  EL TREN 5395 DE LAS 09.19 HS. DESDE CONSTITUCION HACIA ALEJANDRO KORN HA SIDO CANCELADO POR PROBLEMAS OPERATIVOS",
+      "tipo_mensaje": "TREN_ESPECIFICO",
+      "componentes": {
+        "tipo_mensaje": "TREN_ESPECIFICO",
+        "A": "5395",
+        "B": {
+          "estado": "CANCELACIÓN",
+          "codigo": "2",
+          "estructura_formal": true
+        },
+        "C": {
+          "codigo": "05",
+          "forma_comunicacion": "PROBLEMAS OPERATIVOS"
+        },
+        "D": "09:19",
+        "E": {
+          "origen": "CONSTITUCION",
+          "destino": "ALEJANDRO KORN"
+        },
+        "F": "5.2.A",
+        "estructura_valida": true,
+        "ortografia_valida": true,
+        "errores_ortografia": []
+      },
+      "clasificacion": {
+        "IMPORTANTE": [],
+        "OBSERVACIONES": [],
+        "SUGERENCIAS": []
+      },
+      "nivel_general": "COMPLETO",
+      "timing": {
+        "tardanza_minutos": -11.7,
+        "clasificacion": "OPORTUNO",
+        "nivel": "ACEPTABLE",
+        "hora_programada": "09:19",
+        "minutos_demora": 0,
+        "hora_referencia": "09:19",
+        "hora_envio": "09:07:19",
+        "es_cancelacion": true
+      },
+      "scores": {
+        "componentes": {
+          "clasificacion": "COMPLETO",
+          "detalles": []
+        },
+        "timing": {
+          "clasificacion": "EXCELENTE",
+          "detalles": [
+            "Enviado 12 min antes (cancelación/suspensión)"
+          ]
+        },
+        "estructura": {
+          "clasificacion": "IMPECABLE",
+          "detalles": []
+        }
+      },
+      "requiere_notificacion": false
+    }
+  }
+]

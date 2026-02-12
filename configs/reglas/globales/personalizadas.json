@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "reglas": [
+    {
+      "confianza": "alta",
+      "ejemplo_en_mensaje": "DE 5_ MINUTOS",
+      "explicacion": "El mensaje menciona claramente una demora de 5 minutos, por lo que no debería considerarse como falta de cantidad de minutos de demora.",
+      "patron_detectado": "Falta cantidad de minutos de demora",
+      "regex_sugerido": "DE \\d+_ MINUTOS",
+      "tipo": "FALSO_NEGATIVO",
+      "linea": "global",
+      "mensaje_origen": "00649025",
+      "creada_por": "Ariel",
+      "id": "8a4dcf51",
+      "fecha_creacion": "2026-02-11T16:27:50.549934",
+      "activa": true
+    }
+  ]
+}

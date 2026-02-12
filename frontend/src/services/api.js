@@ -1,0 +1,60 @@
+import axios from 'axios';
+
+// Configure Axios with base URL and credentials
+const api = axios.create({
+    baseURL: '',
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Authentication
+export const login = async (usuario, password) => {
+    const response = await api.post('/api/login', { usuario, password });
+    return response.data;
+};
+
+export const logout = async () => {
+    const response = await api.post('/api/logout');
+    return response.data;
+};
+
+export const getSession = async () => {
+    const response = await api.get('/api/session');
+    return response.data;
+};
+
+// Line Selection and Validation Flow
+export const getLineasDisponibles = async () => {
+    const response = await api.get('/api/lineas/disponibles');
+    return response.data;
+};
+
+export const seleccionarLinea = async (linea) => {
+    const response = await api.post('/api/seleccionar-linea', { linea });
+    return response.data;
+};
+
+export const validarMensaje = async (mensaje_id, accion, comentario = '') => {
+    const response = await api.post('/api/validar', { mensaje_id, accion, comentario });
+    return response.data;
+};
+
+export const getMensajesAsignados = async () => {
+    const response = await api.get('/api/mensajes/asignados');
+    return response.data;
+};
+
+// Error Management (Admin/Ariel Only)
+export const getErrores = async () => {
+    const response = await api.get('/api/errores');
+    return response.data;
+};
+
+export const desbloquearMensaje = async (mensaje_id) => {
+    const response = await api.post('/api/errores/desbloquear', { mensaje_id });
+    return response.data;
+};
+
+export default api;
