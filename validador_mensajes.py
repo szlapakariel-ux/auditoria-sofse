@@ -260,6 +260,12 @@ def cargar_reglas_personalizadas():
     _REGLAS_CACHE = reglas
     return reglas
 
+def recargar_reglas():
+    """Fuerza la recarga de las reglas desde el disco"""
+    global _REGLAS_CACHE
+    _REGLAS_CACHE = None
+    print("🔄 Cache de reglas limpiado")
+
 def buscar_contingencia_con_sinonimos(contenido_upper, contingencias_df):
     """
     MEJORA #9: Busca contingencia en texto considerando sinónimos y estructura real

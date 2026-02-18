@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
 from gestor_tandas import GestorTandas
+import validador_mensajes
 import os
 import json
 import threading
@@ -61,7 +62,6 @@ def cargar_todas_las_reglas():
     """Carga todas las reglas activas de todos los archivos"""
     todas = []
     rutas = [
-        'configs/reglas/global/personalizadas.json',
         'configs/reglas/globales/personalizadas.json',
         'configs/reglas/globales/componentes.json',
         'configs/reglas/san_martin/personalizadas.json',
@@ -404,7 +404,6 @@ def verificar_conflictos():
     # Verificar en ambas carpetas
     rutas_verificar = [
         f'configs/reglas/{carpeta}/personalizadas.json',
-        'configs/reglas/global/personalizadas.json',
         'configs/reglas/globales/personalizadas.json',
     ]
     
@@ -466,11 +465,10 @@ def buscar_regla():
     carpeta_linea = mapa_carpetas.get(linea_norm, linea_norm)
 
     rutas_buscar = [
-        # 1. Buscar PRIMERO en globales (con S y sin S)
+        # 1. Buscar PRIMERO en globales
         'configs/reglas/globales/personalizadas.json',
         'configs/reglas/globales/componentes.json',
         'configs/reglas/globales/estructura.json',
-        'configs/reglas/global/personalizadas.json',
         
         # 2. Buscar DESPUÉS en carpeta de la línea específica (si existe)
         f'configs/reglas/{carpeta_linea}/personalizadas.json',
@@ -530,7 +528,7 @@ def crear_regla():
     linea_carpeta = regla['linea'].replace(' ', '_').replace('(', '').replace(')', '').lower()
     # Mapear nombres de línea a carpetas
     mapa_carpetas = {
-        'global': 'global',
+        'global': 'globales',
         'globales': 'globales',
         'linea_san_martin_manual': 'san_martin',
         'linea_san_martin': 'san_martin',
@@ -568,29 +566,53 @@ def crear_regla():
         json.dump(data_reglas, f, indent=2, ensure_ascii=False)
     
     # Re-validar mensajes afectados
+    # 1. Limpiar cache para cargar la regla nueva
+    validador_mensajes.recargar_reglas()
+    
     mensajes_resueltos = 0
     mensajes_reclasificados = 0
     
-    # Obtener acción con múltiples nombres posibles
-    accion = regla.get('accion_sugerida') or regla.get('accion') or 'aprobar_con_obs'
+    import re as re_module
 
     for mensaje in gestor.mensajes:
+        # Solo verificar mensajes relevantes (no completados ni bloqueados por otro motivo)
+        # Nota: 'bloqueado' es un flag, no un estado.
         if mensaje['estado'] in ['PENDIENTE', 'ASIGNADO_PATRICIA', 'ASIGNADO_DIEGO', 'ASIGNADO_ARIEL', 'DERIVADO_A_ARIEL']:
-            import re as re_module
             try:
-                if re_module.search(regla.get('regex_sugerido', ''), mensaje['contenido']):
-                    if accion == 'aprobar_sin_obs':
-                        mensaje['nivel_general'] = 'COMPLETO'
-                    elif accion == 'aprobar_con_obs':
-                        mensaje['nivel_general'] = 'OBSERVACIONES'
+                # Usar regex de la regla para filtrar candidatos (optimización)
+                regex = regla.get('regex_sugerido', '')
+                if regex and re_module.search(regex, mensaje['contenido'], re_module.IGNORECASE | re_module.UNICODE):
                     
+                    # 2. Re-valida completamente usando el motor real
+                    nuevo_reporte = validador_mensajes.procesar_mensaje(mensaje)
+                    
+                    old_nivel = mensaje.get('nivel_general', '')
+                    new_nivel = nuevo_reporte.get('nivel_general', '')
+                    
+                    # 3. Actualizar campos del mensaje en memoria
+                    mensaje.update({
+                        'clasificacion': nuevo_reporte['clasificacion'],
+                        'nivel_general': new_nivel,
+                        'scores': nuevo_reporte['scores'],
+                        'componentes': nuevo_reporte['componentes'],
+                        'timing': nuevo_reporte['timing'],
+                        # Agregar info de regla aplicada si existe
+                        'regla_personalizada_aplicada': nuevo_reporte.get('regla_personalizada_aplicada')
+                    })
+                    
+                    # 4. Lógica de resolución de estados
                     if mensaje['estado'] == 'DERIVADO_A_ARIEL':
-                        mensaje['estado'] = 'PENDIENTE'
-                        mensajes_resueltos += 1
+                        # Si estaba reportado y ahora pasa (o tiene observaciones aceptables)
+                        if new_nivel in ['COMPLETO', 'OBSERVACIONES']:
+                            mensaje['estado'] = 'PENDIENTE'
+                            mensajes_resueltos += 1
+                            print(f"✅ Mensaje {mensaje.get('id')} resuelto/desbloqueado por regla nueva")
                     else:
-                        mensajes_reclasificados += 1
+                        if old_nivel != new_nivel:
+                            mensajes_reclasificados += 1
+                            
             except Exception as e:
-                print(f"⚠️ Error al aplicar regex a mensaje {mensaje['id']}: {e}")
+                print(f"⚠️ Error re-validando mensaje {mensaje.get('id')}: {e}")
                 continue
     
     gestor._guardar_mensajes()
