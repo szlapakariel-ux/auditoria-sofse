@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, Settings, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, ArrowLeft, Send } from 'lucide-react';
 import { getErrores, desbloquearMensaje } from '../services/api';
-import AsistenteReglas from './AsistenteReglas';
 
 export default function PanelErrores() {
     const [errores, setErrores] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showCrearRegla, setShowCrearRegla] = useState(false);
-    const [mensajeActual, setMensajeActual] = useState(null);
 
     useEffect(() => {
         cargarErrores();
@@ -29,20 +26,6 @@ export default function PanelErrores() {
 
 
 
-    const [mostrarAsistente, setMostrarAsistente] = useState(false);
-    const [mensajeParaRegla, setMensajeParaRegla] = useState(null);
-
-    const handleCrearRegla = (mensaje) => {
-        setMensajeParaRegla(mensaje);
-        setMostrarAsistente(true);
-    };
-
-    const handleReglaCreada = (resultado) => {
-        console.log('Regla creada:', resultado);
-        setMostrarAsistente(false);
-        setMensajeParaRegla(null);
-        cargarErrores(); // Recargar panel
-    };
 
     const [showDevolver, setShowDevolver] = useState(false);
     const [mensajeDevolver, setMensajeDevolver] = useState(null);
@@ -146,13 +129,14 @@ export default function PanelErrores() {
 
                             {/* Botones */}
                             <div className="flex gap-3">
-                                <button
-                                    onClick={() => handleCrearRegla(mensaje)}
+                                <a
+                                    href={`antigravity://error/${mensaje.id}?contenido=${encodeURIComponent(mensaje.contenido)}&comentario=${encodeURIComponent(mensaje.comentario_validador)}`}
                                     className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
+                                    title="Abrir en Antigravity para crear/modificar regla"
                                 >
-                                    <Settings size={20} />
-                                    CREAR REGLA
-                                </button>
+                                    <Send size={20} />
+                                    ABRIR EN ANTIGRAVITY
+                                </a>
                                 <button
                                     onClick={() => handleDevolver(mensaje)}
                                     className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
@@ -166,20 +150,6 @@ export default function PanelErrores() {
                 </div>
             )}
 
-            {/* Popup crear regla - Placeholder */}
-            )}
-
-            {/* Asistente de reglas */}
-            {mostrarAsistente && mensajeParaRegla && (
-                <AsistenteReglas
-                    mensaje={mensajeParaRegla}
-                    onCerrar={() => {
-                        setMostrarAsistente(false);
-                        setMensajeParaRegla(null);
-                    }}
-                    onReglaCreada={handleReglaCreada}
-                />
-            )}
 
             {/* Popup devolver a validadores */}
             {showDevolver && mensajeDevolver && (

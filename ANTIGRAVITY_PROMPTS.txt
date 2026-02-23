@@ -1,0 +1,225 @@
+═════════════════════════════════════════════════════════════════════
+PROMPTS PARA ANTIGRAVITY - Gestión de Reglas SOFSE
+═════════════════════════════════════════════════════════════════════
+
+INSTRUCCIONES PARA ARIEL:
+Abre Antigravity y copia/pega los prompts que te interesen.
+Antigravity se conectará a tu backend para trabajar con las reglas.
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 1: LISTAR Y EXPLORAR ERRORES
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 1.1: Ver todos los errores pendientes
+─────────────────────────────────────────
+Accedé a http://localhost:5000/api/errores y mostrá:
+- ID del mensaje
+- Línea ferroviaria
+- Contenido del mensaje
+- Error que detectó el sistema
+- Comentario del validador
+Organizalos por línea.
+
+
+PROMPT 1.2: Filtrar errores por línea
+─────────────────────────────────────
+Mostrá solo los errores de la línea ROCA.
+Para cada uno, indicá si es un falso positivo o falso negativo.
+
+
+PROMPT 1.3: Ver reglas existentes
+─────────────────────────────────
+Consultá GET http://localhost:5000/api/reglas/todas
+Mostrá:
+- Total de reglas activas
+- Reglas globales
+- Reglas específicas de cada línea
+- Fecha de creación de cada una
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 2: CREAR NUEVAS REGLAS
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 2.1: Crear regla para horario sin espacios
+───────────────────────────────────────────────
+Necesito crear una regla que detecte horarios escritos sin espacios.
+Ejemplo: "DE LAS14:30HS" (sin espacio) debería ser detectado como
+"DE LAS 14:30 HS" (con espacios).
+
+Tipo: FALSO_POSITIVO
+Línea: ROCA (global si quiero aplicar a todas)
+Patrón: Horario sin espacios antes/después
+
+Creá la regla y mostrá:
+- Regex resultante
+- Cómo se aplicará
+- Cuántos mensajes se verían afectados
+
+
+PROMPT 2.2: Crear regla para minutos con guión bajo
+──────────────────────────────────────────────────
+El validador marca error cuando ve "5_ MINUTOS" (con guión bajo).
+Debería aceptar eso como equivalente a "5 MINUTOS" (sin guión).
+
+Tipo: FALSO_POSITIVO
+Línea: global
+Patrón: Minutos con símbolos
+
+Creá la regla y aplicá a todos los mensajes pendientes.
+
+
+PROMPT 2.3: Crear regla para recorrido con paréntesis
+────────────────────────────────────────────────────
+En algunos mensajes veo: "DE RETIRO (LSM) HACIA PILAR"
+El validador lo marca como error, pero debería ser válido.
+
+Tipo: FALSO_POSITIVO
+Línea: SAN_MARTIN
+Patrón: Recorrido con paréntesis en origen
+
+Después de crear la regla, aplicá a todos los pendientes
+y mostrá cuántos se resolvieron.
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 3: MODIFICAR REGLAS EXISTENTES
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 3.1: Ampliar regla existente
+────────────────────────────────────
+Buscá la regla de "horarios sin espacios" y ampliala para que
+también detecte formatos con punto (14.30 HS) además de guión (_).
+
+Regex actual probablemente es: \d{2}[_]\d{2}
+Necesito que sea: \d{2}[:_\.]\d{2}
+
+Modificá la regla y mostrá qué cambió.
+
+
+PROMPT 3.2: Ajustar acción de una regla
+──────────────────────────────────────
+Encontrá la regla ID 'abc123' y cambiá su acción de:
+  "aprobar_sin_obs" → "aprobar_con_obs"
+
+Esto es para que aparezca una observación cuando se aplique.
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 4: APLICAR Y RE-VALIDAR
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 4.1: Aplicar todas las reglas a mensajes pendientes
+──────────────────────────────────────────────────────────
+POST http://localhost:5000/api/reglas/aplicar-todas
+
+Mostrá:
+- Cuántos mensajes fueron re-validados
+- Cuántos cambieron de estado (se resolvieron)
+- Cuántos fueron reclasificados
+- Listá los errores que siguen siendo DERIVADO_A_ARIEL
+
+
+PROMPT 4.2: Re-validar y reportar cambios
+─────────────────────────────────────────
+Aplicá todas las reglas y creá un reporte con:
+- Mensajes resueltos hoy
+- Mensajes aún pendientes
+- Tipos de errores que más se repiten
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 5: ANÁLISIS Y DECISIONES
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 5.1: Analizar si necesita nueva regla
+──────────────────────────────────────────────
+Viendo el error del mensaje #123:
+[Aquí pego el contenido y el error]
+
+¿Este es un FALSO_POSITIVO o FALSO_NEGATIVO?
+¿Ya existe una regla que cubra esto?
+Si no existe, ¿qué regex sería necesario?
+
+
+PROMPT 5.2: Comparar patrón con reglas existentes
+──────────────────────────────────────────────────
+Necesito saber si el siguiente patrón ya está cubierto por alguna regla:
+"Horarios con coma en lugar de dos puntos: 14,30 HS"
+
+Consultá todas las reglas y decí si hay cobertura.
+Si la hay, mostrá cuál regla. Si no, sugerí una regla nueva.
+
+
+═════════════════════════════════════════════════════════════════════
+CATEGORÍA 6: WORKFLOW COMPLETO
+═════════════════════════════════════════════════════════════════════
+
+PROMPT 6.1: Resolver todos los errores de una línea
+────────────────────────────────────────────────────
+Línea: ROCA
+
+1. Mostrá todos los errores derivados de ROCA
+2. Para cada uno, decidí si es FALSO_POSITIVO o FALSO_NEGATIVO
+3. Creá reglas nuevas para los falsos positivos
+4. Aplicá todas las reglas
+5. Reportá cuántos se resolvieron
+
+
+PROMPT 6.2: Setup inicial - crear reglas base
+──────────────────────────────────────────────
+Necesito crear un conjunto base de reglas para:
+1. Horarios sin espacios o con símbolos
+2. Minutos con guión bajo
+3. Números de tren con prefijos
+4. Recorridos con paréntesis
+
+Para cada uno:
+- Creá la regla
+- Indicá tipo (FALSO_POSITIVO)
+- Hacela global si aplica a todas las líneas
+
+Después mostrá resumen de lo creado.
+
+
+═════════════════════════════════════════════════════════════════════
+TIPS IMPORTANTES
+═════════════════════════════════════════════════════════════════════
+
+✓ Antes de crear una regla, siempre verificá si ya existe algo similar
+✓ Los regex deben ser válidos en Python (no JavaScript)
+✓ Usa r"" o escapa correctamente: \\d, \\s, etc.
+✓ Después de crear/modificar reglas, siempre aplicá a todos
+✓ Si una regla afecta muchos mensajes, revisá que sea correcta
+✓ Documentá por qué se creó cada regla (patrón claro)
+✓ Las reglas globales aplican a TODAS las líneas
+✓ Las reglas por línea solo aplican a esa línea
+
+
+═════════════════════════════════════════════════════════════════════
+VARIABLES ÚTILES
+═════════════════════════════════════════════════════════════════════
+
+Endpoint base: http://localhost:5000 (cambiar a URL de Render en producción)
+
+Tipos de regla:
+- FALSO_POSITIVO: Validador marcó error pero mensaje está bien
+- FALSO_NEGATIVO: Validador NO detectó un error que sí existe
+
+Acciones sugeridas:
+- aprobar_sin_obs: Aprobar sin observaciones
+- aprobar_con_obs: Aprobar con observaciones
+- rechazar: Rechazar el mensaje
+
+Líneas disponibles:
+- global (aplica a todas)
+- roca
+- san_martin
+- mitre
+- sarmiento
+- belgrano_sur
+- tren_de_la_costa
+
+
+═════════════════════════════════════════════════════════════════════

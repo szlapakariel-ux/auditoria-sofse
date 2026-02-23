@@ -81,118 +81,6 @@ def cargar_todas_las_reglas():
                 todas.extend(reglas)
     return todas
 
-def construir_system_prompt(reglas_actuales):
-    """Construye el system prompt con contexto completo"""
-    
-    reglas_resumen = []
-    for r in reglas_actuales:
-        reglas_resumen.append({
-            'id': r.get('id'),
-            'patron': r.get('patron_detectado'),
-            'regex': r.get('regex_sugerido'),
-            'accion': r.get('accion_sugerida'),
-            'tipo': r.get('tipo', 'FALSO_POSITIVO'),
-            'linea': r.get('linea', 'global')
-        })
-    
-    return f"""Sos un asistente experto en reglas de validación para mensajes ferroviarios SOFSE Argentina.
-
-## CONCEPTO FUNDAMENTAL - DOS SISTEMAS SEPARADOS:
-
-### SISTEMA 1: VALIDADOR ORIGINAL (validador_mensajes.py)
-- Analiza cada mensaje cuando llega al sistema
-- Tiene lógica hardcodeada en Python con sus propios regex
-- Detecta componentes A, B, C, D, E, F
-- NO lee los archivos JSON de reglas personalizadas
-- NO puede modificarse fácilmente
-
-### SISTEMA 2: REGLAS PERSONALIZADAS (configs/reglas/*.json)
-- Son reglas que crea Ariel manualmente
-- Se aplican DESPUÉS de la validación original, en re-validaciones
-- Pueden corregir errores del validador original
-- Son los archivos JSON que ves más abajo
-
-### POR QUÉ EL VALIDADOR NO TOMÓ UN FORMATO:
-Cuando el validador original marca un error en un mensaje que parece correcto,
-significa que el formato usado por el operador NO coincide con el regex
-hardcodeado en validador_mensajes.py.
-
-Ejemplos de formatos que el validador NO reconoce:
-- Horario "DE LAS08 59 HS" → espera "DE LAS HH:MM HS" (con espacio y dos puntos)
-- Minutos "5_ MINUTOS" → espera "5 MINUTOS" (sin guión bajo)
-- Origen "DE RETIRO (LSM) HACIA PILAR" → puede fallar por los paréntesis
-
-### LO QUE PUEDE HACER UNA REGLA PERSONALIZADA:
-Una regla JSON NO modifica el validador original.
-Lo que hace es: después de que el validador marcó el error,
-la regla dice "este error es en realidad un falso positivo,
-el mensaje está bien aunque el validador no lo reconoció".
-
-## TU TRABAJO EN ESTE CHAT:
-1. Leer el COMENTARIO DEL VALIDADOR (Patricia/Diego)
-2. Entender qué formato específico causó el problema
-3. Verificar si alguna REGLA PERSONALIZADA ya existente cubre ese caso
-4. Si existe → decirle a Ariel "ya existe la regla X, pero no se aplicó porque..."
-5. Si no existe → sugerir crear una regla nueva
-6. NUNCA decir "aplicar las reglas vigentes" como si fuera una acción ejecutable
-7. NUNCA confundir el validador original con las reglas JSON
-
-## REGLAS PERSONALIZADAS ACTUALMENTE EN EL SISTEMA ({{len(reglas_actuales)}} reglas):
-{json.dumps(reglas_resumen, ensure_ascii=False, indent=2)}
-
-## LÓGICA DEL VALIDADOR ORIGINAL:
-
-### COMPONENTES POR TIPO:
-
-TREN_ESPECIFICO (código 3.x.x o 17.x.x):
-- A: Número de tren → regex espera: \\d{{4}}
-- B: Estado → espera: DEMORA | CANCELADO | SUSPENDIDO
-- C: Motivo → espera texto libre de contingencia
-- D: Hora → espera EXACTAMENTE: "DE LAS HH:MM HS" con dos puntos
-- E: Recorrido → espera: "DE [origen] HACIA [destino]" sin paréntesis intermedios
-- F: Código → espera: \\d{{1,2}}\\.\\d{{1,2}}\\.[A-Z]
-
-SERVICIO_GENERAL (código 03.x.x):
-- No requiere tren ni hora ni recorrido puntual
-
-### FORMATOS QUE EL VALIDADOR ORIGINAL NO RECONOCE:
-- Horario sin dos puntos: 14_30, 14 30, 14.30, 1430, DE LAS14:30HS (sin espacio)
-- Minutos con símbolo: 5_ MINUTOS, 10_MIN, 5_MIN
-- Recorrido con paréntesis en origen: DE RETIRO (LSM) HACIA PILAR
-- Número de tren con prefijo: @T3432, N @T3432
-
-## CÓMO RESPONDER:
-
-### Si el formato YA tiene regla existente:
-"El validador no reconoció [formato] porque su regex espera [formato correcto].
-Ya existe la regla [ID] que cubre este caso.
-Sin embargo, esa regla no se aplicó a este mensaje porque [razón].
-¿Querés que verifique si la regla necesita ajuste?"
-
-### Si el formato NO tiene regla existente:
-"El validador no reconoció [formato] porque su regex espera [formato correcto].
-No existe regla para este caso todavía.
-Te sugiero crear una regla con este patrón: [patrón]"
-
-### Cuando tenés una regla lista:
-Incluí al final un bloque JSON así:
-```json
-{{
-  "lista_para_crear": true,
-  "patron_detectado": "descripción clara",
-  "regex_sugerido": "expresión regular válida en Python",
-  "accion_sugerida": "aprobar_sin_obs | aprobar_con_obs | rechazar",
-  "tipo": "FALSO_POSITIVO | FALSO_NEGATIVO",
-  "ampliar_regla_id": "id_si_amplía_una_existente_o_null"
-}}
-```
-
-## TONO:
-- Respondé en español argentino
-- Sé directo y concreto
-- Máximo 5 líneas por respuesta
-- No repitas lo que ya dijiste
-- Si Ariel replantea, ajustá tu análisis sin volver a explicar todo desde cero"""
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -627,179 +515,122 @@ def crear_regla():
         'mensajes_reclasificados': mensajes_reclasificados
     })
 
-@app.route('/api/analizar-regla-ia', methods=['POST'])
-def analizar_regla_ia():
-    """Chat multi-turno con IA para crear reglas"""
+# ENDPOINT DE IA ELIMINADO - Antigravity maneja la creación/modificación de reglas
+
+# ============================================
+# ENDPOINTS PARA ANTIGRAVITY
+# ============================================
+
+@app.route('/api/reglas/todas', methods=['GET'])
+def obtener_todas_reglas():
+    """Retorna todas las reglas activas - para que Antigravity las consulte"""
     if session.get('nombre') != 'Ariel':
         return jsonify({'ok': False}), 403
-    
-    data = request.get_json()
-    historial = data.get('historial', [])
-    mensaje_actual = data.get('mensaje_actual', '')
-    mensaje_ferroviario = data.get('mensaje_ferroviario', {})
-    
-    # Cargar reglas actuales dinámicamente
-    reglas_actuales = cargar_todas_las_reglas()
-    system_prompt = construir_system_prompt(reglas_actuales)
-    
-    # Construir historial para la API
-    messages = []
-    
-    # Si es el primer mensaje, incluir contexto del mensaje ferroviario
-    if len(historial) == 0:
-        primer_mensaje = f"""Analizá este caso donde {mensaje_ferroviario.get('derivado_por', 'el validador')} reportó un error del sistema.
 
-COMENTARIO DEL VALIDADOR:
-"{mensaje_ferroviario.get('comentario_validador', '')}"
-
-CONTENIDO DEL MENSAJE FERROVIARIO:
-{mensaje_ferroviario.get('contenido', '')}
-
-ERROR QUE EL SISTEMA DETECTÓ:
-{chr(10).join(['- ' + e for e in mensaje_ferroviario.get('clasificacion', {}).get('IMPORTANTE', [])])}
-
-OBSERVACIONES DEL SISTEMA:
-{chr(10).join(['- ' + e for e in mensaje_ferroviario.get('clasificacion', {}).get('OBSERVACIONES', [])])}
-
-Identificá si es falso positivo o falso negativo basándote en el comentario del validador."""
-        messages.append({"role": "user", "content": primer_mensaje})
-    else:
-        # Reconstruir historial completo
-        for msg in historial:
-            messages.append({
-                "role": msg['rol'],
-                "content": msg['contenido']
-            })
-        # Agregar mensaje actual
-        if mensaje_actual:
-            messages.append({"role": "user", "content": mensaje_actual})
-    
-    # Intentar con ANTHROPIC (Claude)
-    anthropic_key = os.environ.get('ANTHROPIC_API_KEY')
-    if anthropic_key:
-        try:
-            print("📡 Intentando conectar con Claude (Anthropic)...")
-            import anthropic
-            client = anthropic.Anthropic(api_key=anthropic_key)
-            
-            response = client.messages.create(
-                model="claude-3-5-sonnet-20240620",
-                max_tokens=2000,
-                system=system_prompt,
-                messages=messages
-            )
-            
-            respuesta_texto = response.content[0].text
-            return procesar_respuesta_ia(respuesta_texto)
-            
-        except Exception as e:
-            print(f"⚠️ Error Anthropic: {e}")
-
-    # Intentar con GEMINI (Google)
-    gemini_key = os.environ.get('GEMINI_API_KEY', '').strip().replace("'", "").replace('"', "")
-    if len(gemini_key) > 5:
-        try:
-            print("📡 Intentando conectar con Gemini...")
-            import requests
-            
-            # Convertir historial a formato Gemini
-            contents = []
-            # System prompt va separado o como primer mensaje user/model
-            # En Gemini 1.5 Flash podemos usar system instruction o meterlo en el primer turno
-            
-            # Estrategia: System prompt como parte del primer mensaje de usuario
-            # Y mapear historial
-            
-            # Mantener el primer mensaje con system prompt si es posible, o concatenarlo
-            
-            msgs_gemini = []
-            msgs_gemini.append({
-                "role": "user",
-                "parts": [{"text": system_prompt + "\n\n" + messages[0]['content']}]
-            })
-            
-            for m in messages[1:]:
-                role = "model" if m['role'] == "assistant" else "user"
-                msgs_gemini.append({
-                    "role": role,
-                    "parts": [{"text": m['content']}]
-                })
-                
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            
-            payload = {
-                "contents": msgs_gemini,
-                "generationConfig": {"temperature": 0.3}
-            }
-            
-            resp = requests.post(url, headers={"Content-Type": "application/json"}, json=payload, timeout=25)
-            
-            if resp.status_code == 200:
-                respuesta_texto = resp.json()['candidates'][0]['content']['parts'][0]['text']
-                return procesar_respuesta_ia(respuesta_texto)
-            else:
-                print(f"⚠️ Error Gemini: {resp.text[:100]}")
-                
-        except Exception as e:
-            print(f"⚠️ Excepción Gemini: {e}")
-
-    # Intentar con OPENAI (GPT-4o)
-    openai_key = os.environ.get('OPENAI_API_KEY', '').strip().replace("'", "").replace('"', "")
-    if len(openai_key) > 10:
-        try:
-            print("📡 Intentando conectar con OpenAI...")
-            import requests
-            
-            msgs_openai = [{"role": "system", "content": system_prompt}] + messages
-            
-            resp = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {openai_key}"
-                },
-                json={
-                    "model": "gpt-4o-mini",
-                    "messages": msgs_openai,
-                    "temperature": 0.3
-                },
-                timeout=30
-            )
-            
-            if resp.status_code == 200:
-                respuesta_texto = resp.json()['choices'][0]['message']['content']
-                return procesar_respuesta_ia(respuesta_texto)
-            else:
-                print(f"⚠️ Error OpenAI: {resp.text[:100]}")
-                
-        except Exception as e:
-            print(f"⚠️ Excepción OpenAI: {e}")
-
-    print("❌ FATAL: Todas las IAs fallaron.")
-    return jsonify({'ok': False, 'error': 'Fallo total de conexión con IAs. Verificar API Keys.'}), 500
-
-def procesar_respuesta_ia(respuesta_texto):
-    """Procesa el texto de respuesta y extrae JSON si existe"""
-    import json
-    
-    regla_lista = None
-    if '```json' in respuesta_texto:
-        try:
-            json_str = respuesta_texto.split('```json')[1].split('```')[0].strip()
-            regla_json = json.loads(json_str)
-            if regla_json.get('lista_para_crear'):
-                regla_lista = regla_json
-                # Limpiar el JSON del texto para mostrar
-                respuesta_texto = respuesta_texto.split('```json')[0].strip()
-        except:
-            pass
-    
+    todas_reglas = cargar_todas_las_reglas()
     return jsonify({
         'ok': True,
-        'respuesta': respuesta_texto,
-        'regla_lista': regla_lista
+        'total': len(todas_reglas),
+        'reglas': todas_reglas
     })
 
+@app.route('/api/reglas/modificar/<regla_id>', methods=['POST'])
+def modificar_regla(regla_id):
+    """Modifica una regla existente - llamado por Antigravity"""
+    if session.get('nombre') != 'Ariel':
+        return jsonify({'ok': False}), 403
+
+    data = request.get_json()
+    actualizaciones = data.get('actualizaciones', {})
+
+    todas_reglas = cargar_todas_las_reglas()
+    regla_encontrada = False
+
+    for regla in todas_reglas:
+        if regla.get('id') == regla_id:
+            # Actualizar campos permitidos
+            campos_permitidos = ['regex_sugerido', 'accion_sugerida', 'tipo', 'patron_detectado']
+            for campo in campos_permitidos:
+                if campo in actualizaciones:
+                    regla[campo] = actualizaciones[campo]
+
+            regla['fecha_modificacion'] = datetime.now().isoformat()
+            regla_encontrada = True
+
+            # Guardar en archivo
+            ruta_archivo = regla.get('_archivo')
+            if ruta_archivo and os.path.exists(ruta_archivo):
+                with open(ruta_archivo, 'r', encoding='utf-8') as f:
+                    contenido = json.load(f)
+
+                # Actualizar en la lista
+                for r in contenido.get('reglas', []):
+                    if r.get('id') == regla_id:
+                        r.update(regla)
+                        break
+
+                with open(ruta_archivo, 'w', encoding='utf-8') as f:
+                    json.dump(contenido, f, indent=2, ensure_ascii=False)
+
+                # Re-validar mensajes
+                validador_mensajes.recargar_reglas()
+
+                print(f"✅ Regla '{regla_id}' modificada exitosamente")
+                return jsonify({
+                    'ok': True,
+                    'mensaje': 'Regla modificada',
+                    'regla': regla
+                })
+
+    return jsonify({'ok': False, 'error': 'Regla no encontrada'}), 404
+
+@app.route('/api/reglas/aplicar-todas', methods=['POST'])
+def aplicar_reglas_todas():
+    """Re-valida todos los mensajes con las reglas actuales - llamado por Antigravity después de crear/modificar"""
+    if session.get('nombre') != 'Ariel':
+        return jsonify({'ok': False}), 403
+
+    validador_mensajes.recargar_reglas()
+
+    mensajes_resueltos = 0
+    mensajes_reclasificados = 0
+
+    for mensaje in gestor.mensajes:
+        if mensaje['estado'] in ['PENDIENTE', 'ASIGNADO_PATRICIA', 'ASIGNADO_DIEGO', 'ASIGNADO_ARIEL', 'DERIVADO_A_ARIEL']:
+            try:
+                nuevo_reporte = validador_mensajes.procesar_mensaje(mensaje)
+
+                old_nivel = mensaje.get('nivel_general', '')
+                new_nivel = nuevo_reporte.get('nivel_general', '')
+
+                mensaje.update({
+                    'clasificacion': nuevo_reporte['clasificacion'],
+                    'nivel_general': new_nivel,
+                    'scores': nuevo_reporte['scores'],
+                    'componentes': nuevo_reporte['componentes']
+                })
+
+                if mensaje['estado'] == 'DERIVADO_A_ARIEL':
+                    if new_nivel in ['COMPLETO', 'OBSERVACIONES']:
+                        mensaje['estado'] = 'PENDIENTE'
+                        mensajes_resueltos += 1
+                else:
+                    if old_nivel != new_nivel:
+                        mensajes_reclasificados += 1
+
+            except Exception as e:
+                print(f"⚠️ Error re-validando {mensaje.get('id')}: {e}")
+                continue
+
+    gestor._guardar_mensajes()
+
+    return jsonify({
+        'ok': True,
+        'mensaje': 'Re-validación completada',
+        'mensajes_resueltos': mensajes_resueltos,
+        'mensajes_reclasificados': mensajes_reclasificados,
+        'total_afectados': mensajes_resueltos + mensajes_reclasificados
+    })
 
 # ============================================
 # HEALTH CHECK
