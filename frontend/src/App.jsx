@@ -11,6 +11,7 @@ function App() {
     const [loading, setLoading] = useState(true);
     const [currentView, setCurrentView] = useState('login'); // login, selector, validator, errors
     const [mensajes, setMensajes] = useState([]);
+    const [lineaActual, setLineaActual] = useState('');
 
     useEffect(() => {
         checkSession();
@@ -49,13 +50,15 @@ function App() {
         }
     };
 
-    const handleLineaSeleccionada = (mensajesCargados) => {
+    const handleLineaSeleccionada = (mensajesCargados, nombreLinea = '') => {
         setMensajes(mensajesCargados);
+        setLineaActual(nombreLinea);
         setCurrentView('validator');
     };
 
     const handleCambiarLinea = () => {
         setMensajes([]);
+        setLineaActual('');
         setCurrentView('selector');
     };
 
@@ -143,6 +146,7 @@ function App() {
                     <ValidadorMensajes
                         mensajesIniciales={mensajes}
                         usuario={user}
+                        lineaActual={lineaActual}
                         onCambiarLinea={handleCambiarLinea}
                     />
                 )}

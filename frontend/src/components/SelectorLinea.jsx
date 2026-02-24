@@ -31,7 +31,7 @@ const SelectorLinea = ({ onLineaSeleccionada }) => {
         try {
             const data = await seleccionarLinea(linea);
             if (data.ok) {
-                onLineaSeleccionada(data.mensajes);
+                onLineaSeleccionada(data.mensajes, linea);
             } else {
                 alert('Error al seleccionar la línea');
             }

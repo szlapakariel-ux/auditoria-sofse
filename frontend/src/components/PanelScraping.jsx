@@ -3,6 +3,7 @@ import { Download, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader } fr
 import { scrapingSanMartin } from '../services/api';
 
 const PanelScraping = ({ usuario, lineaActual }) => {
+    // ⚠️ TODOS los hooks ANTES de cualquier return condicional (regla de React)
     const [abierto, setAbierto] = useState(false);
     const [vpnUser, setVpnUser] = useState(usuario || '');
     const [vpnPassword, setVpnPassword] = useState('');
@@ -11,10 +12,6 @@ const PanelScraping = ({ usuario, lineaActual }) => {
     const [loading, setLoading] = useState(false);
     const [resultado, setResultado] = useState(null);
     const [error, setError] = useState('');
-
-    // Solo mostrar para San Martín
-    const esSanMartin = lineaActual && lineaActual.toLowerCase().includes('san mart');
-    if (!esSanMartin) return null;
 
     // Calcular fecha de hoy en DD/MM/YYYY
     const hoyStr = () => {
@@ -43,6 +40,10 @@ const PanelScraping = ({ usuario, lineaActual }) => {
             }
         }
     }, []);
+
+    // Solo mostrar para San Martín — return condicional DESPUÉS de todos los hooks
+    const esSanMartin = lineaActual && lineaActual.toLowerCase().includes('san mart');
+    if (!esSanMartin) return null;
 
     const handleImportar = async () => {
         setError('');
