@@ -34,17 +34,17 @@ import io
 
 # Forzar UTF-8 en consola Windows para evitar error con emojis
 # Forzar UTF-8 en consola Windows para evitar error con emojis
-if sys.platform == 'win32':
-    # Check if already wrapped or closed to avoid crash on reload
-    try:
-        if isinstance(sys.stdout, io.TextIOWrapper) and sys.stdout.encoding.lower() != 'utf-8':
-             sys.stdout.reconfigure(encoding='utf-8')
-        elif not isinstance(sys.stdout, io.TextIOWrapper):
-             # Original logic but guarded
-             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-    except Exception:
-        pass # Ignore errors here to prevent module crash
+# if sys.platform == 'win32':
+#     # Check if already wrapped or closed to avoid crash on reload
+#     try:
+#         if isinstance(sys.stdout, io.TextIOWrapper) and sys.stdout.encoding.lower() != 'utf-8':
+#              sys.stdout.reconfigure(encoding='utf-8')
+#         elif not isinstance(sys.stdout, io.TextIOWrapper):
+#              # Original logic but guarded
+#              sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+#              sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+#     except Exception:
+#         pass # Ignore errors here to prevent module crash
 
 from datetime import datetime, timedelta
 
@@ -346,7 +346,7 @@ def detectar_tipo_mensaje(contenido):
     
     # Buscar número de tren
     match_tren = re.search(
-        r'(?:EL\s+)?TREN\s+(?:N[°º]?\s*)?(\d+)',
+        r'(?:EL\s+)?TREN\s+(?:N[°º]?\s*)?(?:@T)?(\d+)',
         contenido_upper
     )
     
@@ -480,9 +480,14 @@ def validar_componentes(mensaje, contingencias_df):
     
     # Componente A: Número de tren o servicio
     if tipo == 'TREN_ESPECIFICO':
-        match_tren = re.search(r'TREN\s+(?:N[°º]?\s*)?(\d+)', contenido_upper)
+        match_tren = re.search(r'TREN\s+(?:N[°º]?\s*)?(?:@T)?(\d+)', contenido_upper)
         if match_tren:
             componentes['A'] = match_tren.group(1)
+            # Detectar si usa prefijo @T incorrecto
+            if re.search(r'TREN\s+(?:N[°º]?\s*)?@T\d+', contenido_upper):
+                componentes.setdefault('advertencias_formato', []).append(
+                    "Número de tren con prefijo '@T'. Formato correcto: 'TREN N° XXXX' o 'TREN XXXX'"
+                )
     elif tipo == 'SERVICIO_GENERAL':
         # MEJORA #13: Permitir guiones en servicio
         match_servicio = re.search(
@@ -532,7 +537,7 @@ def validar_componentes(mensaje, contingencias_df):
     # Si es DEMORA, buscar minutos (MEJORA #1: acepta MIN., MIN, singular DEMORA)
     if estado_detectado == 'DEMORA':
         match_minutos = re.search(
-            r'(?:DEMORAS?|REGISTRA)\s+(?:DE\s+)?(\d+)\s*(?:MINUTOS?|MIN\.?)',
+            r'(?:DEMORAS?|REGISTRA)\s+(?:DE[_\s]\s*)?(\d+)[_\s]*(?:MINUTOS?|MIN\.?)',
             contenido_upper
         )
         if match_minutos:
@@ -575,19 +580,27 @@ def validar_componentes(mensaje, contingencias_df):
                  # or restore the check with better logic
 
         else:
-            # Intentar Flexible (DE LAS sin HS, A LAS, SALIDA...)
-            # MEJORA: Soportar "DE LAS HH.MM" sin HS
-            match_hora_flex = re.search(r'(?:A\s+LAS|DE\s+LAS|DE|SALIDA|HORA)\s*(\d{1,2})[:\s\.](\d{2})', contenido_upper)
-            if match_hora_flex:
-                 componentes['D'] = f"{match_hora_flex.group(1)}:{match_hora_flex.group(2)}"
-                 componentes.setdefault('advertencias_formato', []).append(
-                     "Según Matriz de Mensajes: Usa formato 'DE LAS HH:MM HS'"
-                 )
+            # Intentar 4 dígitos sin separador: "DE LAS 2120 HS"
+            match_hora_nosep = re.search(r'DE\s+LAS\s*(\d{2})(\d{2})\s*HS', contenido_upper)
+            if match_hora_nosep:
+                componentes['D'] = f"{match_hora_nosep.group(1)}:{match_hora_nosep.group(2)}"
+                componentes.setdefault('advertencias_formato', []).append(
+                    "Hora sin separador (ej: '2120' en vez de '21:20'). Formato correcto: 'DE LAS HH:MM HS'"
+                )
+            else:
+                # Intentar Flexible (DE LAS sin HS, A LAS, SALIDA...)
+                # MEJORA: Soportar "DE LAS HH.MM" sin HS
+                match_hora_flex = re.search(r'(?:A\s+LAS|DE\s+LAS|DE|SALIDA|HORA)\s*(\d{1,2})[:\s\.](\d{2})', contenido_upper)
+                if match_hora_flex:
+                     componentes['D'] = f"{match_hora_flex.group(1)}:{match_hora_flex.group(2)}"
+                     componentes.setdefault('advertencias_formato', []).append(
+                         "Según Matriz de Mensajes: Usa formato 'DE LAS HH:MM HS'"
+                     )
 
         # --- E - RECORRIDO (Oficial: DESDE [A] HACIA [B]) ---
         # MEJORA: Aceptamos "DE [Origen]" además de "DESDE"
         match_origen = re.search(r'(?:PARTIENDO\s+(?:DE|DESDE)|DESDE|DE)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)(?=\s+(?:HACIA|A\s+[A-ZÁÉÍÓÚÑ]|CON\s+DEMORA|CIRCULA|HA\s+SIDO|FUE))', contenido_upper)
-        match_destino = re.search(r'HACIA\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)(?=\s+(?:CIRCULA|HA\s+SIDO|FUE|CON\s+DEMORA|REGISTRA|SE\s+ENCUENTRA|POR\s+|O\s+TRAS\s+|RESTABLECE|SE\s+|$))', contenido_upper)
+        match_destino = re.search(r'HACIA\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)(?=\s+(?:CIRCULA|HA\s+SIDO|FUE|CON\s+DEMORA|REGISTRA|SE\s+ENCUENTRA|POR\s+|O\s+TRAS\s+|RESTABLECE|SE\s+|PARTIO|$))', contenido_upper)
         
         # Lógica Flexible: Si no encuentra oficial, buscar variantes
         if not match_origen or not match_destino:
