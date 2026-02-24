@@ -1,33 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Download, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { scrapingSanMartin } from '../services/api';
+import { Download, ChevronDown, ChevronUp, CheckCircle, BookOpen, ExternalLink, Copy } from 'lucide-react';
+
+// URL del backend — en producción usa el mismo dominio, en dev usa localhost
+const BACKEND_URL = import.meta.env.VITE_API_URL || '';
+const IMPORT_TOKEN = 'sofse2026';
+
+// Bookmarklet minificado — se genera con la URL del backend actual
+const generarBookmarklet = (backendUrl, token) => {
+    return `javascript:void(function(){var B='${backendUrl}',T='${token}',p=document.querySelectorAll('div.panel-mensaje');if(!p.length){alert('No se encontraron mensajes en esta p\\u00e1gina.');return}var m=[];p.forEach(function(panel){try{var id=panel.getAttribute('data-id_mensaje')||'',t=panel.querySelector('h3.panel-title'),tt=t?t.textContent.trim():'',mf=tt.match(/(\\d{2}\\/\\d{2}\\/\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})/),f=mf?mf[1]:'',h=mf?mf[2]:'',mn=tt.match(/#(\\d+)/),n=mn?mn[1]:'',sl=panel.querySelector('span.hidden-sm'),l=sl?sl.textContent.trim():'',lc=panel.querySelector('span.label-criticidad'),c=lc?lc.textContent.trim():'',tp='',es='';panel.querySelectorAll('input.form-control').forEach(function(i){var v=i.value||'';if(/DEMORA|CANCELACI|REDUCIDO|SUSPENDIDO/.test(v))tp=v;if(/^(Nuevo|Modificaci|Baja)/.test(v))es=v});var ta=panel.querySelector('textarea.form-control'),co=ta?ta.textContent.trim():'',dop=panel.querySelector('div[style*="font-size: 11px"]'),op=dop?dop.textContent.trim().replace('Operador: ',''):'',g=[];var sg=panel.querySelector('select.selector-js');if(sg)sg.querySelectorAll('option[selected]').forEach(function(o){g.push(o.textContent.trim())});m.push({id_mensaje:id,numero_mensaje:n,fecha:f,hora:h,fecha_hora:f+' '+h,linea:l,criticidad:c,tipificacion:tp,estado:es,contenido:co,operador:op,grupos:g,estado_sms:'',estado_email:''})}catch(e){}});if(!m.length){alert('No se pudo extraer ning\\u00fan mensaje.');return}if(!confirm(m.length+' mensajes encontrados.\\n\\n\\u00bfEnviar a Auditor\\u00eda?'))return;fetch(B+'/api/scraping/importar?token='+T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensajes:m,pagina_url:location.href})}).then(function(r){return r.json()}).then(function(r){if(r.ok)alert('\\u2705 '+r.nuevos+' nuevos\\n\\u27f3 '+r.duplicados+' duplicados'+(r.errores>0?'\\n\\u26a0\\ufe0f '+r.errores+' errores':''));else alert('Error: '+(r.error||'desconocido'))}).catch(function(e){alert('Error: '+e.message)})})();`;
+};
 
 const PanelScraping = ({ usuario, lineaActual }) => {
-    // ⚠️ TODOS los hooks ANTES de cualquier return condicional (regla de React)
     const [abierto, setAbierto] = useState(false);
-    const [vpnUser, setVpnUser] = useState(usuario || '');
-    const [vpnPassword, setVpnPassword] = useState('');
-    const [fechaInicio, setFechaInicio] = useState('');
-    const [fechaFin, setFechaFin] = useState('');
-    const [loading, setLoading] = useState(false);
     const [resultado, setResultado] = useState(null);
-    const [error, setError] = useState('');
-
-    // Calcular fecha de hoy en DD/MM/YYYY
-    const hoyStr = () => {
-        const hoy = new Date();
-        const d = String(hoy.getDate()).padStart(2, '0');
-        const m = String(hoy.getMonth() + 1).padStart(2, '0');
-        const y = hoy.getFullYear();
-        return `${d}/${m}/${y}`;
-    };
-
-    // Inicializar fechas con hoy
-    useEffect(() => {
-        const h = hoyStr();
-        setFechaInicio(h);
-        setFechaFin(h);
-    }, []);
+    const [copiado, setCopiado] = useState(false);
 
     // Cargar último resultado guardado
     useEffect(() => {
@@ -35,50 +21,33 @@ const PanelScraping = ({ usuario, lineaActual }) => {
         if (guardado) {
             try {
                 setResultado(JSON.parse(guardado));
-            } catch (e) {
-                // ignorar
-            }
+            } catch (e) { /* ignorar */ }
         }
     }, []);
 
-    // Solo mostrar para San Martín — return condicional DESPUÉS de todos los hooks
+    // Solo mostrar para San Martín
     const esSanMartin = lineaActual && lineaActual.toLowerCase().includes('san mart');
     if (!esSanMartin) return null;
 
-    const handleImportar = async () => {
-        setError('');
-        setResultado(null);
+    // Detectar URL del backend actual
+    const currentBackend = BACKEND_URL || window.location.origin;
+    const bookmarkletCode = generarBookmarklet(currentBackend, IMPORT_TOKEN);
 
-        if (!vpnUser.trim() || !vpnPassword.trim()) {
-            setError('Ingresá usuario y contraseña VPN.');
-            return;
-        }
-        if (!fechaInicio || !fechaFin) {
-            setError('Ingresá las fechas de búsqueda.');
-            return;
-        }
-
-        setLoading(true);
+    const handleCopiarBookmarklet = async () => {
         try {
-            const res = await scrapingSanMartin(vpnUser, vpnPassword, fechaInicio, fechaFin);
-            if (res.ok) {
-                const r = {
-                    nuevos:     res.nuevos,
-                    duplicados: res.duplicados,
-                    errores:    res.errores,
-                    timestamp:  res.timestamp,
-                };
-                setResultado(r);
-                localStorage.setItem('ultimoScrapingSanMartin', JSON.stringify(r));
-                setVpnPassword(''); // Limpiar contraseña por seguridad
-            } else {
-                setError(res.error || 'Error desconocido al importar.');
-            }
+            await navigator.clipboard.writeText(bookmarkletCode);
+            setCopiado(true);
+            setTimeout(() => setCopiado(false), 2000);
         } catch (e) {
-            const msg = e?.response?.data?.error || e?.message || 'Error de conexión.';
-            setError(msg);
-        } finally {
-            setLoading(false);
+            // Fallback para mobile
+            const ta = document.createElement('textarea');
+            ta.value = bookmarkletCode;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            setCopiado(true);
+            setTimeout(() => setCopiado(false), 2000);
         }
     };
 
@@ -90,9 +59,7 @@ const PanelScraping = ({ usuario, lineaActual }) => {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
             });
-        } catch (e) {
-            return ts;
-        }
+        } catch (e) { return ts; }
     };
 
     return (
@@ -109,7 +76,7 @@ const PanelScraping = ({ usuario, lineaActual }) => {
                     </span>
                     {resultado && (
                         <span className="text-xs text-blue-500 ml-1">
-                            · Último: {formatTimestamp(resultado.timestamp)}
+                            {'\u00b7'} {formatTimestamp(resultado.timestamp)}
                         </span>
                     )}
                 </div>
@@ -121,119 +88,88 @@ const PanelScraping = ({ usuario, lineaActual }) => {
 
             {/* Contenido */}
             {abierto && (
-                <div className="p-4 space-y-3">
-                    {/* Usuario VPN */}
-                    <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Usuario VPN
-                        </label>
-                        <input
-                            type="text"
-                            value={vpnUser}
-                            onChange={e => setVpnUser(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                            placeholder="Tu usuario del portal VPN"
-                            autoComplete="off"
-                            disabled={loading}
-                        />
+                <div className="p-4 space-y-4">
+                    {/* Instrucciones */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                        <h4 className="font-semibold text-blue-800 text-sm mb-2 flex items-center gap-1">
+                            <BookOpen size={14} />
+                            Pasos para importar mensajes
+                        </h4>
+                        <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside">
+                            <li>
+                                <strong>Primero</strong>: Agregá el bookmarklet a tus favoritos (una sola vez, ver abajo)
+                            </li>
+                            <li>
+                                Abrí el <a
+                                    href="https://portalvpn.sofse.gob.ar"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline font-medium"
+                                >
+                                    portal VPN SOFSE <ExternalLink size={10} className="inline" />
+                                </a> y logueate con tu usuario
+                            </li>
+                            <li>Navegá a la página de <strong>mensajes</strong> de tu línea</li>
+                            <li>Tocá el favorito <strong>"Enviar a Auditoría"</strong></li>
+                            <li>Confirmá el envío y listo</li>
+                        </ol>
                     </div>
 
-                    {/* Contraseña VPN */}
-                    <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Contraseña VPN
-                        </label>
-                        <input
-                            type="password"
-                            value={vpnPassword}
-                            onChange={e => setVpnPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                            placeholder="Tu contraseña del portal VPN"
-                            autoComplete="new-password"
-                            disabled={loading}
-                        />
+                    {/* Bookmarklet para copiar/instalar */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <h4 className="font-semibold text-gray-700 text-sm mb-2">
+                            Instalar bookmarklet
+                        </h4>
+
+                        {/* En desktop: arrastrar a la barra de favoritos */}
+                        <p className="text-xs text-gray-500 mb-2">
+                            <strong>PC:</strong> Arrastrá este botón a tu barra de favoritos:
+                        </p>
+                        <div className="mb-3">
+                            <a
+                                href={bookmarkletCode}
+                                onClick={(e) => e.preventDefault()}
+                                className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold
+                                           hover:bg-green-700 transition-colors cursor-grab active:cursor-grabbing"
+                                title="Arrastrá este botón a tu barra de favoritos"
+                            >
+                                Enviar a Auditoría
+                            </a>
+                        </div>
+
+                        {/* En mobile: copiar y crear favorito manual */}
+                        <p className="text-xs text-gray-500 mb-2">
+                            <strong>Celular:</strong> Copiá el código y creá un favorito con esa URL:
+                        </p>
+                        <button
+                            onClick={handleCopiarBookmarklet}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 hover:bg-gray-300
+                                       rounded text-xs font-medium text-gray-700 transition-colors"
+                        >
+                            <Copy size={12} />
+                            {copiado ? 'Copiado!' : 'Copiar código del bookmarklet'}
+                        </button>
                     </div>
 
-                    {/* Fechas */}
-                    <div className="flex gap-2">
-                        <div className="flex-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Desde
-                            </label>
-                            <input
-                                type="text"
-                                value={fechaInicio}
-                                onChange={e => setFechaInicio(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                                placeholder="DD/MM/AAAA"
-                                disabled={loading}
-                            />
-                        </div>
-                        <div className="flex-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Hasta
-                            </label>
-                            <input
-                                type="text"
-                                value={fechaFin}
-                                onChange={e => setFechaFin(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                                placeholder="DD/MM/AAAA"
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Botón importar */}
-                    <button
-                        onClick={handleImportar}
-                        disabled={loading}
-                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300
-                                   text-white rounded-lg font-semibold text-sm flex items-center
-                                   justify-center gap-2 transition-colors"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader size={16} className="animate-spin" />
-                                Importando mensajes...
-                            </>
-                        ) : (
-                            <>
-                                <Download size={16} />
-                                Importar mensajes
-                            </>
-                        )}
-                    </button>
-
-                    {/* Error */}
-                    {error && (
-                        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                            <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                    )}
-
-                    {/* Resultado exitoso */}
-                    {resultado && !error && (
+                    {/* Último resultado */}
+                    {resultado && (
                         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <div className="flex items-center gap-2 mb-1">
                                 <CheckCircle size={16} className="text-green-600" />
                                 <span className="text-sm font-semibold text-green-800">
-                                    Importación completada
+                                    Última importación
+                                </span>
+                                <span className="text-xs text-green-600">
+                                    {formatTimestamp(resultado.timestamp)}
                                 </span>
                             </div>
                             <div className="flex gap-4 text-sm text-green-700">
-                                <span>✅ {resultado.nuevos} nuevos</span>
-                                <span>⟳ {resultado.duplicados} duplicados</span>
+                                <span>{resultado.nuevos} nuevos</span>
+                                <span>{resultado.duplicados} duplicados</span>
                                 {resultado.errores > 0 && (
-                                    <span>⚠️ {resultado.errores} errores</span>
+                                    <span>{resultado.errores} errores</span>
                                 )}
                             </div>
-                            {resultado.nuevos > 0 && (
-                                <p className="text-xs text-green-600 mt-1">
-                                    Los mensajes nuevos ya están disponibles para validar.
-                                </p>
-                            )}
                         </div>
                     )}
                 </div>

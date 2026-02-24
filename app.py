@@ -21,11 +21,12 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = bool(os.environ.get('RENDER'))
 
 # CORS: en producción el frontend está en el mismo dominio, no necesita CORS
-# Dejamos localhost para desarrollo local
+# Dejamos localhost para desarrollo local + portalvpn para el bookmarklet
 CORS(app, supports_credentials=True, origins=[
     "http://localhost:5173",
     "http://localhost:5000",
-    os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000')
+    os.environ.get('RENDER_EXTERNAL_URL', 'http://localhost:5000'),
+    "https://portalvpn.sofse.gob.ar",
 ])
 
 gestor = GestorTandas()
@@ -739,6 +740,81 @@ def scraping_san_martin():
 
     print(f"🚂 Scraping San Martín por {session['nombre']}: "
           f"{nuevos} nuevos, {duplicados} duplicados, {errores} errores")
+
+    return jsonify({
+        'ok':         True,
+        'nuevos':     nuevos,
+        'duplicados': duplicados,
+        'errores':    errores,
+        'timestamp':  datetime.now().isoformat(),
+    })
+
+
+# ============================================
+# IMPORTAR MENSAJES VÍA BOOKMARKLET
+# (el validador los extrae desde su Chrome y los envía acá)
+# ============================================
+
+# Token simple para evitar spam — configurar en .env
+IMPORT_TOKEN = os.environ.get('IMPORT_TOKEN', 'sofse2026')
+
+@app.route('/api/scraping/importar', methods=['POST', 'OPTIONS'])
+def importar_mensajes_bookmarklet():
+    """Recibe mensajes ya parseados desde el bookmarklet del validador"""
+    # Verificar token
+    token = request.args.get('token', '')
+    if token != IMPORT_TOKEN:
+        return jsonify({'ok': False, 'error': 'Token inválido'}), 403
+
+    data = request.get_json()
+    if not data or 'mensajes' not in data:
+        return jsonify({'ok': False, 'error': 'Faltan mensajes en el body'}), 400
+
+    mensajes_recibidos = data.get('mensajes', [])
+    if not mensajes_recibidos:
+        return jsonify({'ok': True, 'nuevos': 0, 'duplicados': 0, 'errores': 0,
+                        'mensaje': 'No se encontraron mensajes en la página'})
+
+    # Deduplicación: comparar ids
+    ids_existentes = set()
+    for m in gestor.mensajes:
+        raw = m.get('id', '').lstrip('0') or '0'
+        ids_existentes.add(raw)
+
+    nuevos = 0
+    duplicados = 0
+    errores = 0
+    mensajes_nuevos = []
+
+    for msg in mensajes_recibidos:
+        id_raw = str(msg.get('id_mensaje', '') or msg.get('numero_mensaje', '')).lstrip('0') or '0'
+
+        if not id_raw or id_raw == '0':
+            errores += 1
+            continue
+
+        if id_raw in ids_existentes:
+            duplicados += 1
+            continue
+
+        # Inferir nombre de línea desde el mensaje o usar default
+        linea_nombre = msg.get('linea', '') or 'Línea San Martín'
+
+        try:
+            reporte = validador_mensajes.procesar_mensaje(msg)
+            msg_sistema = transformar_mensaje_scrapeado(msg, reporte, linea_nombre)
+            mensajes_nuevos.append(msg_sistema)
+            ids_existentes.add(id_raw)
+            nuevos += 1
+        except Exception as e:
+            print(f"⚠️  Error procesando mensaje {id_raw}: {e}")
+            errores += 1
+
+    if mensajes_nuevos:
+        gestor.mensajes.extend(mensajes_nuevos)
+        gestor._guardar_mensajes()
+
+    print(f"📋 Bookmarklet import: {nuevos} nuevos, {duplicados} duplicados, {errores} errores")
 
     return jsonify({
         'ok':         True,
