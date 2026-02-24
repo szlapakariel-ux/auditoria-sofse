@@ -57,7 +57,7 @@ export const desbloquearMensaje = async (mensaje_id) => {
     return response.data;
 };
 
-// Scraping VPN
+// Scraping VPN (legacy — requests-based, no funciona con GlobalProtect)
 export const scrapingSanMartin = async (vpn_user, vpn_password, fecha_inicio, fecha_fin) => {
     const response = await api.post('/api/scraping/san-martin', {
         vpn_user,
@@ -65,6 +65,17 @@ export const scrapingSanMartin = async (vpn_user, vpn_password, fecha_inicio, fe
         fecha_inicio,
         fecha_fin,
     });
+    return response.data;
+};
+
+// Scraping Híbrido (Playwright: login auto + extracción CDP)
+export const scrapingIniciar = async (vpn_user, vpn_password) => {
+    const response = await api.post('/api/scraping/iniciar', { vpn_user, vpn_password });
+    return response.data;
+};
+
+export const scrapingExtraer = async () => {
+    const response = await api.post('/api/scraping/extraer');
     return response.data;
 };
 

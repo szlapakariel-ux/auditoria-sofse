@@ -826,6 +826,131 @@ def importar_mensajes_bookmarklet():
 
 
 # ============================================
+# SCRAPER HÍBRIDO: Login auto + Extracción CDP
+# (Playwright abre Chrome, usuario navega, backend extrae)
+# ============================================
+
+@app.route('/api/scraping/iniciar', methods=['POST'])
+def scraping_iniciar():
+    """Abre Chrome con Playwright y hace login al portal VPN"""
+    if 'nombre' not in session:
+        return jsonify({'ok': False, 'error': 'No autenticado'}), 401
+
+    data = request.get_json()
+    vpn_user     = (data.get('vpn_user', '') or '').strip()
+    vpn_password = (data.get('vpn_password', '') or '').strip()
+
+    if not vpn_user or not vpn_password:
+        return jsonify({'ok': False, 'error': 'Ingresá usuario y contraseña VPN'}), 400
+
+    try:
+        from scraper_hibrido import abrir_y_login
+        resultado = abrir_y_login(vpn_user, vpn_password)
+        print(f"🌐 Scraping iniciar por {session['nombre']}: {resultado.get('mensaje', '')}")
+        return jsonify(resultado)
+    except ImportError:
+        return jsonify({
+            'ok': False,
+            'error': 'Playwright no disponible en este servidor. Usá el bookmarklet como alternativa.'
+        }), 500
+    except Exception as e:
+        print(f"❌ Error en scraping/iniciar: {e}")
+        return jsonify({'ok': False, 'error': f'Error: {str(e)}'}), 500
+
+
+@app.route('/api/scraping/extraer', methods=['POST'])
+def scraping_extraer():
+    """Lee mensajes de la página abierta en Chrome via CDP"""
+    if 'nombre' not in session:
+        return jsonify({'ok': False, 'error': 'No autenticado'}), 401
+
+    try:
+        from scraper_hibrido import extraer_pagina_actual
+        resultado = extraer_pagina_actual()
+    except ImportError:
+        return jsonify({
+            'ok': False,
+            'error': 'Playwright no disponible en este servidor.'
+        }), 500
+    except Exception as e:
+        print(f"❌ Error en scraping/extraer: {e}")
+        return jsonify({'ok': False, 'error': f'Error: {str(e)}'}), 500
+
+    if not resultado.get('ok') or not resultado.get('mensajes'):
+        return jsonify({
+            'ok': resultado.get('ok', False),
+            'error': resultado.get('mensaje', 'No se encontraron mensajes'),
+            'url_leida': resultado.get('url', ''),
+            'nuevos': 0,
+            'duplicados': 0,
+            'errores': 0,
+        })
+
+    # Deduplicación (misma lógica que los otros endpoints)
+    ids_existentes = set()
+    for m in gestor.mensajes:
+        raw = m.get('id', '').lstrip('0') or '0'
+        ids_existentes.add(raw)
+
+    nuevos = 0
+    duplicados = 0
+    errores = 0
+    mensajes_nuevos = []
+
+    for msg in resultado['mensajes']:
+        id_raw = str(msg.get('id_mensaje', '') or msg.get('numero_mensaje', '')).lstrip('0') or '0'
+
+        if not id_raw or id_raw == '0':
+            errores += 1
+            continue
+
+        if id_raw in ids_existentes:
+            duplicados += 1
+            continue
+
+        linea_nombre = msg.get('linea', '') or 'Línea San Martín'
+
+        try:
+            reporte = validador_mensajes.procesar_mensaje(msg)
+            msg_sistema = transformar_mensaje_scrapeado(msg, reporte, linea_nombre)
+            mensajes_nuevos.append(msg_sistema)
+            ids_existentes.add(id_raw)
+            nuevos += 1
+        except Exception as e:
+            print(f"⚠️  Error procesando mensaje {id_raw}: {e}")
+            errores += 1
+
+    if mensajes_nuevos:
+        gestor.mensajes.extend(mensajes_nuevos)
+        gestor._guardar_mensajes()
+
+    print(f"🚂 Extracción CDP por {session['nombre']}: "
+          f"{nuevos} nuevos, {duplicados} duplicados, {errores} errores | {resultado.get('url', '')}")
+
+    return jsonify({
+        'ok':         True,
+        'nuevos':     nuevos,
+        'duplicados': duplicados,
+        'errores':    errores,
+        'url_leida':  resultado.get('url', ''),
+        'timestamp':  datetime.now().isoformat(),
+    })
+
+
+@app.route('/api/scraping/estado', methods=['GET'])
+def scraping_estado():
+    """Verifica si hay un Chrome abierto con debug port"""
+    try:
+        from scraper_hibrido import browser_activo
+        activo = browser_activo()
+        return jsonify({'ok': True, 'browser_activo': activo})
+    except ImportError:
+        return jsonify({'ok': True, 'browser_activo': False, 'playwright_disponible': False})
+    except Exception:
+        return jsonify({'ok': True, 'browser_activo': False})
+
+
+# ============================================
 # HEALTH CHECK
 # ============================================
 @app.route('/health', methods=['GET'])

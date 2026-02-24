@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Download, ChevronDown, ChevronUp, CheckCircle, BookOpen, ExternalLink, Copy } from 'lucide-react';
-
-// URL del backend — en producción usa el mismo dominio, en dev usa localhost
-const BACKEND_URL = import.meta.env.VITE_API_URL || '';
-const IMPORT_TOKEN = 'sofse2026';
-
-// Bookmarklet minificado — se genera con la URL del backend actual
-const generarBookmarklet = (backendUrl, token) => {
-    return `javascript:void(function(){var B='${backendUrl}',T='${token}',p=document.querySelectorAll('div.panel-mensaje');if(!p.length){alert('No se encontraron mensajes en esta p\\u00e1gina.');return}var m=[];p.forEach(function(panel){try{var id=panel.getAttribute('data-id_mensaje')||'',t=panel.querySelector('h3.panel-title'),tt=t?t.textContent.trim():'',mf=tt.match(/(\\d{2}\\/\\d{2}\\/\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})/),f=mf?mf[1]:'',h=mf?mf[2]:'',mn=tt.match(/#(\\d+)/),n=mn?mn[1]:'',sl=panel.querySelector('span.hidden-sm'),l=sl?sl.textContent.trim():'',lc=panel.querySelector('span.label-criticidad'),c=lc?lc.textContent.trim():'',tp='',es='';panel.querySelectorAll('input.form-control').forEach(function(i){var v=i.value||'';if(/DEMORA|CANCELACI|REDUCIDO|SUSPENDIDO/.test(v))tp=v;if(/^(Nuevo|Modificaci|Baja)/.test(v))es=v});var ta=panel.querySelector('textarea.form-control'),co=ta?ta.textContent.trim():'',dop=panel.querySelector('div[style*="font-size: 11px"]'),op=dop?dop.textContent.trim().replace('Operador: ',''):'',g=[];var sg=panel.querySelector('select.selector-js');if(sg)sg.querySelectorAll('option[selected]').forEach(function(o){g.push(o.textContent.trim())});m.push({id_mensaje:id,numero_mensaje:n,fecha:f,hora:h,fecha_hora:f+' '+h,linea:l,criticidad:c,tipificacion:tp,estado:es,contenido:co,operador:op,grupos:g,estado_sms:'',estado_email:''})}catch(e){}});if(!m.length){alert('No se pudo extraer ning\\u00fan mensaje.');return}if(!confirm(m.length+' mensajes encontrados.\\n\\n\\u00bfEnviar a Auditor\\u00eda?'))return;fetch(B+'/api/scraping/importar?token='+T,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensajes:m,pagina_url:location.href})}).then(function(r){return r.json()}).then(function(r){if(r.ok)alert('\\u2705 '+r.nuevos+' nuevos\\n\\u27f3 '+r.duplicados+' duplicados'+(r.errores>0?'\\n\\u26a0\\ufe0f '+r.errores+' errores':''));else alert('Error: '+(r.error||'desconocido'))}).catch(function(e){alert('Error: '+e.message)})})();`;
-};
+import { Download, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Loader, Globe, Search } from 'lucide-react';
+import { scrapingIniciar, scrapingExtraer } from '../services/api';
 
 const PanelScraping = ({ usuario, lineaActual }) => {
+    // ---- Hooks (SIEMPRE antes de cualquier return condicional) ----
     const [abierto, setAbierto] = useState(false);
+    const [vpnUser, setVpnUser] = useState(usuario || '');
+    const [vpnPassword, setVpnPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [resultado, setResultado] = useState(null);
-    const [copiado, setCopiado] = useState(false);
+
+    // Paso actual: 'login' o 'extraer'
+    const [paso, setPaso] = useState('login');
+    const [browserAbierto, setBrowserAbierto] = useState(false);
+    const [urlLogin, setUrlLogin] = useState('');
 
     // Cargar último resultado guardado
     useEffect(() => {
@@ -25,30 +26,73 @@ const PanelScraping = ({ usuario, lineaActual }) => {
         }
     }, []);
 
-    // Solo mostrar para San Martín
+    // ---- Return condicional DESPUÉS de todos los hooks ----
     const esSanMartin = lineaActual && lineaActual.toLowerCase().includes('san mart');
     if (!esSanMartin) return null;
 
-    // Detectar URL del backend actual
-    const currentBackend = BACKEND_URL || window.location.origin;
-    const bookmarkletCode = generarBookmarklet(currentBackend, IMPORT_TOKEN);
+    // ---- Handlers ----
 
-    const handleCopiarBookmarklet = async () => {
-        try {
-            await navigator.clipboard.writeText(bookmarkletCode);
-            setCopiado(true);
-            setTimeout(() => setCopiado(false), 2000);
-        } catch (e) {
-            // Fallback para mobile
-            const ta = document.createElement('textarea');
-            ta.value = bookmarkletCode;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            setCopiado(true);
-            setTimeout(() => setCopiado(false), 2000);
+    const handleAbrirPortal = async () => {
+        setError('');
+        setResultado(null);
+
+        if (!vpnUser.trim() || !vpnPassword.trim()) {
+            setError('Ingresá usuario y contraseña VPN.');
+            return;
         }
+
+        setLoading(true);
+        try {
+            const res = await scrapingIniciar(vpnUser, vpnPassword);
+            if (res.ok) {
+                setBrowserAbierto(true);
+                setPaso('extraer');
+                setUrlLogin(res.url || '');
+                setVpnPassword(''); // Limpiar por seguridad
+            } else {
+                setError(res.error || res.mensaje || 'Error al abrir el portal.');
+            }
+        } catch (e) {
+            const msg = e?.response?.data?.error || e?.message || 'Error de conexión.';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExtraer = async () => {
+        setError('');
+        setResultado(null);
+        setLoading(true);
+
+        try {
+            const res = await scrapingExtraer();
+            if (res.ok) {
+                const r = {
+                    nuevos:     res.nuevos,
+                    duplicados: res.duplicados,
+                    errores:    res.errores,
+                    timestamp:  res.timestamp,
+                    url_leida:  res.url_leida,
+                };
+                setResultado(r);
+                localStorage.setItem('ultimoScrapingSanMartin', JSON.stringify(r));
+            } else {
+                setError(res.error || 'No se encontraron mensajes. Asegurate de estar en la página de mensajes.');
+            }
+        } catch (e) {
+            const msg = e?.response?.data?.error || e?.message || 'Error de conexión.';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVolver = () => {
+        setPaso('login');
+        setBrowserAbierto(false);
+        setError('');
+        setResultado(null);
     };
 
     const formatTimestamp = (ts) => {
@@ -74,7 +118,12 @@ const PanelScraping = ({ usuario, lineaActual }) => {
                     <span className="font-semibold text-blue-800 text-sm">
                         Importar mensajes desde SOFSE
                     </span>
-                    {resultado && (
+                    {browserAbierto && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                            Chrome abierto
+                        </span>
+                    )}
+                    {resultado && !browserAbierto && (
                         <span className="text-xs text-blue-500 ml-1">
                             {'\u00b7'} {formatTimestamp(resultado.timestamp)}
                         </span>
@@ -88,79 +137,132 @@ const PanelScraping = ({ usuario, lineaActual }) => {
 
             {/* Contenido */}
             {abierto && (
-                <div className="p-4 space-y-4">
-                    {/* Instrucciones */}
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                        <h4 className="font-semibold text-blue-800 text-sm mb-2 flex items-center gap-1">
-                            <BookOpen size={14} />
-                            Pasos para importar mensajes
-                        </h4>
-                        <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside">
-                            <li>
-                                <strong>Primero</strong>: Agregá el bookmarklet a tus favoritos (una sola vez, ver abajo)
-                            </li>
-                            <li>
-                                Abrí el <a
-                                    href="https://portalvpn.sofse.gob.ar"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="underline font-medium"
-                                >
-                                    portal VPN SOFSE <ExternalLink size={10} className="inline" />
-                                </a> y logueate con tu usuario
-                            </li>
-                            <li>Navegá a la página de <strong>mensajes</strong> de tu línea</li>
-                            <li>Tocá el favorito <strong>"Enviar a Auditoría"</strong></li>
-                            <li>Confirmá el envío y listo</li>
-                        </ol>
-                    </div>
+                <div className="p-4 space-y-3">
 
-                    {/* Bookmarklet para copiar/instalar */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <h4 className="font-semibold text-gray-700 text-sm mb-2">
-                            Instalar bookmarklet
-                        </h4>
+                    {/* ========== PASO 1: Login ========== */}
+                    {paso === 'login' && (
+                        <>
+                            <p className="text-xs text-gray-500">
+                                Ingresá tus credenciales del portal VPN. Se abrirá Chrome automáticamente para hacer login.
+                            </p>
 
-                        {/* En desktop: arrastrar a la barra de favoritos */}
-                        <p className="text-xs text-gray-500 mb-2">
-                            <strong>PC:</strong> Arrastrá este botón a tu barra de favoritos:
-                        </p>
-                        <div className="mb-3">
-                            <a
-                                href={bookmarkletCode}
-                                onClick={(e) => e.preventDefault()}
-                                className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold
-                                           hover:bg-green-700 transition-colors cursor-grab active:cursor-grabbing"
-                                title="Arrastrá este botón a tu barra de favoritos"
+                            {/* Usuario VPN */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                    Usuario VPN
+                                </label>
+                                <input
+                                    type="text"
+                                    value={vpnUser}
+                                    onChange={e => setVpnUser(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                                    placeholder="Tu usuario del portal VPN"
+                                    autoComplete="off"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            {/* Contraseña VPN */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                    Contraseña VPN
+                                </label>
+                                <input
+                                    type="password"
+                                    value={vpnPassword}
+                                    onChange={e => setVpnPassword(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                                    placeholder="Tu contraseña del portal VPN"
+                                    autoComplete="new-password"
+                                    disabled={loading}
+                                    onKeyDown={e => e.key === 'Enter' && !loading && handleAbrirPortal()}
+                                />
+                            </div>
+
+                            {/* Botón abrir portal */}
+                            <button
+                                onClick={handleAbrirPortal}
+                                disabled={loading}
+                                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300
+                                           text-white rounded-lg font-semibold text-sm flex items-center
+                                           justify-center gap-2 transition-colors"
                             >
-                                Enviar a Auditoría
-                            </a>
+                                {loading ? (
+                                    <>
+                                        <Loader size={16} className="animate-spin" />
+                                        Abriendo Chrome y logueando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Globe size={16} />
+                                        Abrir portal VPN
+                                    </>
+                                )}
+                            </button>
+                        </>
+                    )}
+
+                    {/* ========== PASO 2: Extraer ========== */}
+                    {paso === 'extraer' && (
+                        <>
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                                <p className="text-sm text-blue-800 font-medium mb-1">
+                                    Chrome abierto y logueado
+                                </p>
+                                <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                                    <li>Navegá a la página de <strong>mensajes</strong> de tu línea en el Chrome que se abrió</li>
+                                    <li>Cuando estés en el listado de mensajes, volvé acá y tocá el botón</li>
+                                </ol>
+                            </div>
+
+                            {/* Botón extraer */}
+                            <button
+                                onClick={handleExtraer}
+                                disabled={loading}
+                                className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300
+                                           text-white rounded-lg font-semibold text-sm flex items-center
+                                           justify-center gap-2 transition-colors"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader size={16} className="animate-spin" />
+                                        Leyendo mensajes...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Search size={16} />
+                                        Extraer mensajes de la página actual
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Botón volver */}
+                            <button
+                                onClick={handleVolver}
+                                disabled={loading}
+                                className="w-full py-1.5 text-gray-500 hover:text-gray-700 text-xs
+                                           font-medium transition-colors"
+                            >
+                                Volver al login
+                            </button>
+                        </>
+                    )}
+
+                    {/* ========== Error ========== */}
+                    {error && (
+                        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                            <p className="text-sm text-red-700">{error}</p>
                         </div>
+                    )}
 
-                        {/* En mobile: copiar y crear favorito manual */}
-                        <p className="text-xs text-gray-500 mb-2">
-                            <strong>Celular:</strong> Copiá el código y creá un favorito con esa URL:
-                        </p>
-                        <button
-                            onClick={handleCopiarBookmarklet}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 hover:bg-gray-300
-                                       rounded text-xs font-medium text-gray-700 transition-colors"
-                        >
-                            <Copy size={12} />
-                            {copiado ? 'Copiado!' : 'Copiar código del bookmarklet'}
-                        </button>
-                    </div>
-
-                    {/* Último resultado */}
-                    {resultado && (
+                    {/* ========== Resultado exitoso ========== */}
+                    {resultado && !error && (
                         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <div className="flex items-center gap-2 mb-1">
                                 <CheckCircle size={16} className="text-green-600" />
                                 <span className="text-sm font-semibold text-green-800">
-                                    Última importación
-                                </span>
-                                <span className="text-xs text-green-600">
-                                    {formatTimestamp(resultado.timestamp)}
+                                    Importación completada
                                 </span>
                             </div>
                             <div className="flex gap-4 text-sm text-green-700">
@@ -170,6 +272,11 @@ const PanelScraping = ({ usuario, lineaActual }) => {
                                     <span>{resultado.errores} errores</span>
                                 )}
                             </div>
+                            {resultado.nuevos > 0 && (
+                                <p className="text-xs text-green-600 mt-1">
+                                    Los mensajes nuevos ya están disponibles para validar.
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>
