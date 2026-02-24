@@ -57,4 +57,15 @@ export const desbloquearMensaje = async (mensaje_id) => {
     return response.data;
 };
 
+// Scraping VPN
+export const scrapingSanMartin = async (vpn_user, vpn_password, fecha_inicio, fecha_fin) => {
+    const response = await api.post('/api/scraping/san-martin', {
+        vpn_user,
+        vpn_password,
+        fecha_inicio,
+        fecha_fin,
+    });
+    return response.data;
+};
+
 export default api;

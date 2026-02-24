@@ -633,6 +633,123 @@ def aplicar_reglas_todas():
     })
 
 # ============================================
+# PANEL DE SCRAPING VPN
+# ============================================
+
+def transformar_mensaje_scrapeado(msg_scraper: dict, reporte: dict, linea_nombre: str) -> dict:
+    """Convierte el dict del scraper al formato del sistema (mensajes_estado.json)"""
+    # ID formateado con ceros a la izquierda (8 dígitos)
+    id_raw = msg_scraper.get('numero_mensaje', '') or msg_scraper.get('id_mensaje', '')
+    id_formateado = str(id_raw).zfill(8) if id_raw else ''
+
+    return {
+        'id':            id_formateado,
+        'contenido':     msg_scraper.get('contenido', ''),
+        'operador':      msg_scraper.get('operador', ''),
+        'linea':         linea_nombre,
+        'fecha_hora':    msg_scraper.get('fecha_hora', ''),
+        'tipo_mensaje':  reporte.get('tipo_mensaje'),
+        'estado':        'PENDIENTE',
+        'asignado_a':    None,
+        'asignado_en':   None,
+        'procesado_por': None,
+        'procesado_en':  None,
+        'nivel_general': reporte.get('nivel_general', 'OBSERVACIONES'),
+        'clasificacion': reporte.get('clasificacion', {}),
+        'scores':        reporte.get('scores', {}),
+        'componentes':   reporte.get('componentes', {}),
+        'timing':        reporte.get('timing'),
+    }
+
+@app.route('/api/scraping/san-martin', methods=['POST'])
+def scraping_san_martin():
+    """Scrapea mensajes de San Martín usando credenciales VPN del validador"""
+    if 'nombre' not in session:
+        return jsonify({'ok': False, 'error': 'No autenticado'}), 401
+
+    data = request.get_json()
+    vpn_user     = (data.get('vpn_user', '') or '').strip()
+    vpn_password = (data.get('vpn_password', '') or '').strip()
+    fecha_inicio_str = (data.get('fecha_inicio', '') or '').strip()
+    fecha_fin_str    = (data.get('fecha_fin', '') or '').strip()
+
+    if not all([vpn_user, vpn_password, fecha_inicio_str, fecha_fin_str]):
+        return jsonify({'ok': False, 'error': 'Faltan datos: vpn_user, vpn_password, fecha_inicio, fecha_fin'}), 400
+
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%d/%m/%Y')
+        fecha_fin    = datetime.strptime(fecha_fin_str,    '%d/%m/%Y')
+    except ValueError:
+        return jsonify({'ok': False, 'error': 'Formato de fecha inválido. Usar DD/MM/YYYY'}), 400
+
+    if (fecha_fin - fecha_inicio).days > 7:
+        return jsonify({'ok': False, 'error': 'Rango máximo permitido: 7 días'}), 400
+
+    if fecha_fin < fecha_inicio:
+        return jsonify({'ok': False, 'error': 'La fecha fin debe ser mayor o igual a fecha inicio'}), 400
+
+    # Scraping
+    try:
+        from scraper_requests import scrape_san_martin, ScraperLoginError, ScraperError
+        mensajes_scrapeados = scrape_san_martin(vpn_user, vpn_password, fecha_inicio, fecha_fin)
+    except ScraperLoginError as e:
+        return jsonify({'ok': False, 'error': f'Credenciales VPN incorrectas: {e}'}), 401
+    except ScraperError as e:
+        return jsonify({'ok': False, 'error': f'Error durante el scraping: {e}'}), 500
+    except Exception as e:
+        print(f"Error inesperado en scraping: {e}")
+        return jsonify({'ok': False, 'error': 'Error inesperado. Verificá tu conexión a internet.'}), 500
+
+    # Deduplicación: comparar id_mensaje (scraper) vs id (sistema, zero-padded)
+    ids_existentes = set()
+    for m in gestor.mensajes:
+        raw = m.get('id', '').lstrip('0') or '0'
+        ids_existentes.add(raw)
+
+    LINEA_SAN_MARTIN = 'Línea San Martín'
+    nuevos    = 0
+    duplicados = 0
+    errores    = 0
+    mensajes_nuevos = []
+
+    for msg in mensajes_scrapeados:
+        id_raw = str(msg.get('id_mensaje', '') or msg.get('numero_mensaje', '')).lstrip('0') or '0'
+
+        if not id_raw or id_raw == '0':
+            errores += 1
+            continue
+
+        if id_raw in ids_existentes:
+            duplicados += 1
+            continue
+
+        try:
+            reporte = validador_mensajes.procesar_mensaje(msg)
+            msg_sistema = transformar_mensaje_scrapeado(msg, reporte, LINEA_SAN_MARTIN)
+            mensajes_nuevos.append(msg_sistema)
+            ids_existentes.add(id_raw)  # Evitar duplicados dentro del mismo batch
+            nuevos += 1
+        except Exception as e:
+            print(f"⚠️  Error procesando mensaje {id_raw}: {e}")
+            errores += 1
+
+    if mensajes_nuevos:
+        gestor.mensajes.extend(mensajes_nuevos)
+        gestor._guardar_mensajes()
+
+    print(f"🚂 Scraping San Martín por {session['nombre']}: "
+          f"{nuevos} nuevos, {duplicados} duplicados, {errores} errores")
+
+    return jsonify({
+        'ok':         True,
+        'nuevos':     nuevos,
+        'duplicados': duplicados,
+        'errores':    errores,
+        'timestamp':  datetime.now().isoformat(),
+    })
+
+
+# ============================================
 # HEALTH CHECK
 # ============================================
 @app.route('/health', methods=['GET'])

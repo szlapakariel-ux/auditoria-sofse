@@ -3,6 +3,7 @@ import MensajeCard from './MensajeCard';
 import { validarMensaje } from '../services/api';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import MensajesBloqueados from './MensajesBloqueados';
+import PanelScraping from './PanelScraping';
 
 const ValidadorMensajes = ({ mensajesIniciales, usuario, onCambiarLinea: onVolverSelector }) => {
     const [mensajes, setMensajes] = useState(mensajesIniciales || []);
@@ -129,6 +130,12 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, onCambiarLinea: onVolve
                     <p className="font-bold text-gray-800">{usuario}</p>
                 </div>
             </div>
+
+            {/* Panel de Scraping VPN (solo San Martín) */}
+            <PanelScraping
+                usuario={usuario}
+                lineaActual={mensajesIniciales?.[0]?.linea || ''}
+            />
 
             {/* Acordeón de mensajes bloqueados */}
             <MensajesBloqueados
