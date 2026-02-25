@@ -958,8 +958,26 @@ def health():
     return jsonify({
         'status': 'ok',
         'timestamp': datetime.now().isoformat(),
-        'environment': 'render' if os.environ.get('RENDER') else 'local'
+        'environment': 'render' if os.environ.get('RENDER') else 'local',
+        'deploy_version': 'v2-dynamic-html'
     })
+
+@app.route('/debug-assets', methods=['GET'])
+def debug_assets():
+    """Endpoint de diagnóstico para verificar qué assets tiene el frontend."""
+    assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist', 'assets')
+    dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
+    result = {
+        'dist_exists': os.path.exists(dist_dir),
+        'assets_dir_exists': os.path.exists(assets_dir),
+        'dist_files': [],
+        'asset_files': [],
+    }
+    if os.path.exists(dist_dir):
+        result['dist_files'] = os.listdir(dist_dir)
+    if os.path.exists(assets_dir):
+        result['asset_files'] = os.listdir(assets_dir)
+    return jsonify(result)
 
 # ============================================
 # SERVIR FRONTEND (React build) EN PRODUCCIÓN
