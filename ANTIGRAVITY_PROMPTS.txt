@@ -184,24 +184,95 @@ Después mostrá resumen de lo creado.
 
 
 ═════════════════════════════════════════════════════════════════════
+⚠️  REGLAS DE ORO (OBLIGATORIAS ANTES DE TODA ACCIÓN)
+═════════════════════════════════════════════════════════════════════
+
+🔴 REGLA DE ORO 1: NO DUPLICAR — SIEMPRE AMPLIAR
+─────────────────────────────────────────────────
+Antes de crear una regla nueva, SIEMPRE:
+1. Consultar GET /api/reglas/todas
+2. Buscar si ya existe una regla que cubra un patrón SIMILAR
+3. Si existe → AMPLIAR la regla existente (modificar su regex)
+4. Si NO existe → recién ahí crear una nueva
+
+Ejemplo: Si ya existe regla para "hora sin separador (2120)"
+y ahora necesito cubrir "hora pegada a LAS (LAS22 16)",
+NO creo regla nueva. AMPLÍO la existente para cubrir ambos.
+
+🔴 REGLA DE ORO 2: NO CONTRADECIR — UNA SOLA VIGENTE
+─────────────────────────────────────────────────────
+Jamás crear una regla que contradiga a otra existente.
+Si dos reglas cubren el mismo patrón con acciones distintas,
+solo UNA puede quedar vigente:
+1. Evaluar cuál es más correcta/completa
+2. Desactivar o eliminar la que pierde
+3. Mantener solo la ganadora
+
+Ejemplo: Si existe regla "aprobar_sin_obs" para minutos con _
+y ahora quiero que sea "aprobar_con_obs", NO creo nueva.
+MODIFICO la existente o la reemplazo.
+
+🔴 REGLA DE ORO 3: AUDITAR EN AMBOS ENTORNOS — SINCRONIZAR SIEMPRE
+───────────────────────────────────────────────────────────────────
+Los errores viven en dos lugares: LOCAL y PRODUCCIÓN (Render).
+Nunca auditar uno solo. SIEMPRE revisar ambos:
+
+  ┌──────────────┐          ┌──────────────┐
+  │   🖥️ LOCAL   │◄────────►│  🌐 PRODUCCIÓN│
+  │ localhost:5000│  SINCRO  │  Render.com  │
+  └──────────────┘          └──────────────┘
+
+Flujo obligatorio:
+1. Buscar errores en PRODUCCIÓN → GET /api/errores
+2. Buscar errores en LOCAL → GET /api/errores
+3. Consolidar: ¿hay errores en uno que no estén en el otro?
+4. Corregir en el CÓDIGO FUENTE (validador_mensajes.py)
+5. Re-validar en LOCAL para probar los cambios
+6. DEPLOY a producción para que tome los cambios
+7. Re-validar en PRODUCCIÓN
+8. Confirmar: ambos entornos en 0 errores ✅
+
+⚠️ Si corrijo un error solo en local y no hago deploy,
+   producción sigue rota. ¡SIEMPRE cerrar el ciclo!
+
+⚠️ Si creo una regla solo en producción y no actualizo
+   el código fuente, al hacer redeploy se pierde.
+
+Regla de sincronización:
+  → Los cambios al VALIDADOR van en el código fuente (Git)
+  → Las REGLAS personalizadas van en los JSON de reglas
+  → Después de CADA sesión de auditoría → commit + deploy
+
+═════════════════════════════════════════════════════════════════════
 TIPS IMPORTANTES
 ═════════════════════════════════════════════════════════════════════
 
-✓ Antes de crear una regla, siempre verificá si ya existe algo similar
+✓ SIEMPRE consultar errores desde PRODUCCIÓN (Render)
+✓ Antes de crear una regla, SIEMPRE verificar reglas existentes (Regla de Oro 1)
+✓ Nunca crear regla que contradiga otra existente (Regla de Oro 2)
+✓ Auditar LOCAL + PRODUCCIÓN y cerrar con deploy (Regla de Oro 3)
 ✓ Los regex deben ser válidos en Python (no JavaScript)
 ✓ Usa r"" o escapa correctamente: \\d, \\s, etc.
-✓ Después de crear/modificar reglas, siempre aplicá a todos
-✓ Si una regla afecta muchos mensajes, revisá que sea correcta
-✓ Documentá por qué se creó cada regla (patrón claro)
+✓ Después de crear/modificar reglas, siempre aplicar a todos
+✓ Si una regla afecta muchos mensajes, revisar que sea correcta
+✓ Documentar por qué se creó cada regla (patrón claro)
 ✓ Las reglas globales aplican a TODAS las líneas
 ✓ Las reglas por línea solo aplican a esa línea
+✓ Si una corrección requiere cambiar lógica del validador
+  (validador_mensajes.py), modificar el código fuente directamente
+  en vez de crear una regla que lo sobreescriba
 
 
 ═════════════════════════════════════════════════════════════════════
 VARIABLES ÚTILES
 ═════════════════════════════════════════════════════════════════════
 
-Endpoint base: http://localhost:5000 (cambiar a URL de Render en producción)
+Endpoint PRODUCCIÓN (principal): https://auditoria-sofse.onrender.com
+Endpoint LOCAL (solo desarrollo):  http://localhost:5000
+
+⚠️ IMPORTANTE: Siempre trabajar contra PRODUCCIÓN a menos que
+se indique explícitamente lo contrario. Los errores y reglas
+de producción son la fuente de verdad.
 
 Tipos de regla:
 - FALSO_POSITIVO: Validador marcó error pero mensaje está bien
@@ -209,7 +280,7 @@ Tipos de regla:
 
 Acciones sugeridas:
 - aprobar_sin_obs: Aprobar sin observaciones
-- aprobar_con_obs: Aprobar con observaciones
+- aprobar_con_obs: Aprobar con observaciones (incluir mensaje_operador)
 - rechazar: Rechazar el mensaje
 
 Líneas disponibles:

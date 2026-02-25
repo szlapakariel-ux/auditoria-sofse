@@ -517,14 +517,19 @@ def validar_componentes(mensaje, contingencias_df):
     
     # Si no encontró estado formal, buscar menciones informales
     if not estado_detectado:
-        # Buscar "DEMORA" sin estructura formal
-        if re.search(r'\bDEMORAS?\b', contenido_upper):
+        # Buscar "DEMORA" o "DEMORANDO" sin estructura formal
+        if re.search(r'\bDEMORAS?\b|\bDEMORANDO\b', contenido_upper):
             estado_detectado = 'DEMORA'
             componentes['B'] = {
                 'estado': estado_detectado,
                 'codigo': '1',
                 'estructura_formal': False
             }
+            # Si usa "DEMORANDO", agregar observación de formato correcto
+            if re.search(r'\bDEMORANDO\b', contenido_upper):
+                componentes.setdefault('advertencias_formato', []).append(
+                    "Se usó 'DEMORANDO' como estado. Formato estándar: 'CIRCULA CON DEMORAS DE X MINUTOS APROX'"
+                )
         # Buscar "CANCELADO/A" sin estructura formal
         elif re.search(r'\bCANCELAD[OA]S?\b', contenido_upper):
             estado_detectado = 'CANCELACIÓN'
@@ -536,13 +541,37 @@ def validar_componentes(mensaje, contingencias_df):
     
     # Si es DEMORA, buscar minutos (MEJORA #1: acepta MIN., MIN, singular DEMORA)
     if estado_detectado == 'DEMORA':
+        # Formato estándar: "DEMORAS DE X MINUTOS" o "REGISTRA X MINUTOS"
+        # Acepta guión bajo antes o después del número: DE _15, DE 10_, DE_9, 12 _
         match_minutos = re.search(
-            r'(?:DEMORAS?|REGISTRA)\s+(?:DE[_\s]\s*)?(\d+)[_\s]*(?:MINUTOS?|MIN\.?)',
+            r'(?:DEMORAS?|REGISTRA)\s+(?:DE[_\s]*)?[_\s]*(\d+)[_\s]*(?:MINUTOS?|MIN\.?)',
             contenido_upper
         )
+        # Formato alternativo: "CON X MINUTOS DE DEMORAS"
+        match_minutos_alt = re.search(
+            r'CON\s+(\d+)\s+MINUTOS\s+DE\s+DEMORAS?',
+            contenido_upper
+        )
+        
         if match_minutos:
             if componentes['B']:
                 componentes['B']['minutos'] = match_minutos.group(1)
+                # Detectar si el formato original tenía guión bajo
+                fragmento = match_minutos.group(0)
+                if '_' in fragmento:
+                    componentes.setdefault('advertencias_formato', []).append(
+                        f"Guión bajo en minutos de demora ('{fragmento.strip()}'). "
+                        f"Formato correcto: 'CIRCULA CON DEMORAS DE {match_minutos.group(1)} MINUTOS APROX'"
+                    )
+        elif match_minutos_alt:
+            if componentes['B']:
+                componentes['B']['minutos'] = match_minutos_alt.group(1)
+                # Marcar como estructura formal (tiene los datos) pero advertir formato
+                componentes['B']['estructura_formal'] = True
+                componentes.setdefault('advertencias_formato', []).append(
+                    f"Formato alternativo de demora: 'CON {match_minutos_alt.group(1)} MINUTOS DE DEMORAS'. "
+                    "Formato estándar: 'CIRCULA CON DEMORAS DE X MINUTOS APROX'"
+                )
     
     # Componente C: Contingencia (MEJORA #9: con sinónimos)
     codigo_contingencia = None
@@ -588,14 +617,23 @@ def validar_componentes(mensaje, contingencias_df):
                     "Hora sin separador (ej: '2120' en vez de '21:20'). Formato correcto: 'DE LAS HH:MM HS'"
                 )
             else:
-                # Intentar Flexible (DE LAS sin HS, A LAS, SALIDA...)
-                # MEJORA: Soportar "DE LAS HH.MM" sin HS
-                match_hora_flex = re.search(r'(?:A\s+LAS|DE\s+LAS|DE|SALIDA|HORA)\s*(\d{1,2})[:\s\.](\d{2})', contenido_upper)
-                if match_hora_flex:
-                     componentes['D'] = f"{match_hora_flex.group(1)}:{match_hora_flex.group(2)}"
-                     componentes.setdefault('advertencias_formato', []).append(
-                         "Según Matriz de Mensajes: Usa formato 'DE LAS HH:MM HS'"
-                     )
+                # Intentar hora desordenada: "DE LAS HS HH MM" (operador puso HS antes de la hora)
+                match_hora_desordenada = re.search(r'DE\s+LAS\s+HS\s+(\d{1,2})\s+(\d{2})', contenido_upper)
+                if match_hora_desordenada:
+                    componentes['D'] = f"{match_hora_desordenada.group(1)}:{match_hora_desordenada.group(2)}"
+                    componentes.setdefault('advertencias_formato', []).append(
+                        f"Hora desordenada: 'DE LAS HS {match_hora_desordenada.group(1)} {match_hora_desordenada.group(2)}'. "
+                        f"Formato correcto: 'DE LAS {match_hora_desordenada.group(1)}:{match_hora_desordenada.group(2)} HS'"
+                    )
+                else:
+                    # Intentar Flexible (DE LAS sin HS, A LAS, SALIDA...)
+                    # MEJORA: Soportar "DE LAS HH.MM" sin HS
+                    match_hora_flex = re.search(r'(?:A\s+LAS|DE\s+LAS|DE|SALIDA|HORA)\s*(\d{1,2})[:\s\.](\d{2})', contenido_upper)
+                    if match_hora_flex:
+                         componentes['D'] = f"{match_hora_flex.group(1)}:{match_hora_flex.group(2)}"
+                         componentes.setdefault('advertencias_formato', []).append(
+                             "Según Matriz de Mensajes: Usa formato 'DE LAS HH:MM HS'"
+                         )
 
         # --- E - RECORRIDO (Oficial: DESDE [A] HACIA [B]) ---
         # MEJORA: Aceptamos "DE [Origen]" además de "DESDE"
@@ -619,14 +657,14 @@ def validar_componentes(mensaje, contingencias_df):
             
             # Variante 2: "DE [A] A [B]" (Solo si no encontró ENTRE)
             if not componentes.get('E'):
-                match_de_a = re.search(r'(?:SALIENDO\s+|SALE\s+)?DE\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)\s+A\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)(?=\s+(?:CIRCULA|HA\s+SIDO|FUE|CON\s+DEMORA|$))', contenido_upper)
+                match_de_a = re.search(r'(?:SALIENDO\s+|SALE\s+)?DE\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)\s+A\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.\(\)]+?)(?=\s+(?:CIRCULA|HA\s+SIDO|FUE|CON\s+DEMORA|CON\s+SU\s+VUELTA|PARTIENDO|SERAN?|$))', contenido_upper)
                 if match_de_a:
                     componentes['E'] = {
                         'origen': match_de_a.group(1).strip(),
                         'destino': match_de_a.group(2).strip()
                     }
                     componentes.setdefault('advertencias_formato', []).append(
-                        "Según Matriz de Mensajes: Usa 'HACIA [Estacion]' en lugar de 'A'"
+                        "Formato de ruta: Se usó 'DE [X] A [Y]'. Formato estándar: 'DESDE [Origen] HACIA [Destino]'"
                     )
         
         if (match_origen and match_destino) or componentes.get('E'):
@@ -945,7 +983,7 @@ def clasificar_mensaje(mensaje, componentes, codigo_estructura, codigo_contingen
     
     # Componente C: Contingencia (ambos tipos)
     if not componentes.get('C'):
-        # MEJORA #6: Código 17 con cancelación puede no tener motivo detallado
+        # MEJORA #6: Código 17 (OTRAS CONTINGENCIAS) no requiere motivo específico
         # MEJORA #11: Formaciones sin contingencia detallada es aceptable
         estado = componentes.get('B', {})
         estado_nombre = estado.get('estado', '') if isinstance(estado, dict) else ''
@@ -955,9 +993,12 @@ def clasificar_mensaje(mensaje, componentes, codigo_estructura, codigo_contingen
         contenido_msg = mensaje.get('contenido', '').upper()
         menciona_formaciones = 'FORMACION' in contenido_msg
         
-        if estado_nombre in ['CANCELACIÓN', 'SUSPENDIDO'] and codigo_X == '17':
+        if codigo_X == '17':
+            # Código 17 = OTRAS CONTINGENCIAS → por definición no requiere motivo específico
+            # Solo se sugiere que si existe un código más adecuado, lo use
             clasificacion['OBSERVACIONES'].append(
-                "ℹ️ Código 17 sin motivo detallado. Si existe causa específica, usar código correspondiente"
+                "ℹ️ Se usó código 17 (OTRAS CONTINGENCIAS). Si existe una causa específica "
+                "(ej: problemas técnicos = código 3), usar el código correspondiente"
             )
         elif menciona_formaciones:
             # MEJORA #11: Formaciones sin contingencia es válido
