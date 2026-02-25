@@ -10,3 +10,4 @@ venv/
 *.tmp
 .vscode/
 .idea/
+frontend/dist/
