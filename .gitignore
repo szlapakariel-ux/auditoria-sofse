@@ -10,4 +10,4 @@ venv/
 *.tmp
 .vscode/
 .idea/
-frontend/dist/
+# frontend/dist/ # commiteado intencionalmente para deploy directo en Render
