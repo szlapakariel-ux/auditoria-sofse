@@ -981,6 +981,48 @@ MIME_TYPES = {
     '.ttf': 'font/ttf',
 }
 
+def _get_index_html():
+    """
+    Genera el index.html leyendo los assets reales del dist/.
+    Si el dist/ existe, toma los nombres de los archivos JS/CSS generados
+    por Vite (con hash) para garantizar que siempre sirve el build correcto.
+    """
+    assets_dir = os.path.join(FRONTEND_DIR, 'assets')
+    js_file = ''
+    css_file = ''
+    if os.path.exists(assets_dir):
+        for f in os.listdir(assets_dir):
+            if f.endswith('.js'):
+                js_file = f'/assets/{f}'
+            elif f.endswith('.css'):
+                css_file = f'/assets/{f}'
+
+    return f'''<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta name="theme-color" content="#1e40af" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="Sistema de Validación de Mensajes Ferroviarios - SOFSE" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚆</text></svg>" />
+    <title>Validación SOFSE</title>
+    {f'<script type="module" crossorigin src="{js_file}"></script>' if js_file else ''}
+    {f'<link rel="stylesheet" crossorigin href="{css_file}">' if css_file else ''}
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>'''
+
+
 if os.path.exists(FRONTEND_DIR):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
@@ -988,7 +1030,7 @@ if os.path.exists(FRONTEND_DIR):
         """
         Sirve el frontend de React con MIME types correctos y cache headers.
         - Archivos en /assets/* → cache largo (tienen hash en nombre)
-        - index.html → sin cache (para que siempre cargue la versión nueva)
+        - index.html → generado dinámicamente con assets reales del dist/
         - Las rutas /api/* NO llegan acá porque Flask las resuelve antes
         """
         file_path = os.path.join(FRONTEND_DIR, path)
@@ -1000,13 +1042,17 @@ if os.path.exists(FRONTEND_DIR):
             response = send_from_directory(FRONTEND_DIR, path, mimetype=mimetype)
 
             # Assets con hash → cache largo (1 año)
-            if '/assets/' in path:
+            if 'assets/' in path:
                 response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
             return response
 
-        # SPA fallback → index.html sin cache
-        response = send_from_directory(FRONTEND_DIR, 'index.html')
+        # SPA fallback → index.html generado dinámicamente (siempre fresco)
+        from flask import Response
+        html = _get_index_html()
+        response = Response(html, mimetype='text/html')
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
         return response
 
 if __name__ == '__main__':
