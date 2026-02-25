@@ -15,6 +15,12 @@ function App() {
 
     useEffect(() => {
         checkSession();
+
+        // Keep-alive ping cada 10 min para que Render free no apague el servicio
+        const keepAlive = setInterval(() => {
+            fetch('/health').catch(() => {});
+        }, 10 * 60 * 1000); // 10 minutos
+        return () => clearInterval(keepAlive);
     }, []);
 
     const checkSession = async () => {
