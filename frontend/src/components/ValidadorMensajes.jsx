@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import MensajeCard from './MensajeCard';
 import { validarMensaje } from '../services/api';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
 import MensajesBloqueados from './MensajesBloqueados';
 import PanelScraping from './PanelScraping';
 
@@ -50,6 +50,7 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, lineaActual = '', onCam
             const data = await validarMensaje(mensajeId, 'ENVIAR', '');
 
             if (data.ok) {
+                setCompletedCount(prev => prev + 1);
                 if (data.nueva_tanda && data.nueva_tanda.length > 0) {
                     setMensajes(data.nueva_tanda);
                     setCurrentIndex(0);
@@ -94,40 +95,45 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, lineaActual = '', onCam
     // If queue is empty or index out of bounds
     if (!mensajeActual) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white rounded-xl shadow-lg border border-gray-100 max-w-2xl mx-auto mt-12">
-                <div className="bg-green-100 p-4 rounded-full mb-6">
-                    <CheckCircle className="text-green-600" size={48} />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 animate-fade-in">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 max-w-md mx-auto p-10">
+                    <div className="bg-emerald-100 p-4 rounded-2xl mb-6 inline-flex">
+                        <Sparkles className="text-emerald-600" size={40} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">¡Todo al día!</h2>
+                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                        Validaste <strong>{completedCount}</strong> mensaje{completedCount !== 1 ? 's' : ''} en esta sesión.
+                        No hay más pendientes en esta línea.
+                    </p>
+                    <button
+                        onClick={onVolverSelector}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700
+                                   text-white font-semibold py-3 px-8 rounded-xl shadow-md hover:shadow-lg
+                                   transition-all flex items-center gap-2 mx-auto active:scale-[0.98]"
+                    >
+                        <ArrowLeft size={18} />
+                        Volver al selector
+                    </button>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-4">¡Todo al día!</h2>
-                <p className="text-gray-500 text-lg mb-8">
-                    Has validado {completedCount} mensajes en esta sesión.
-                    No hay más mensajes pendientes en esta línea por ahora.
-                </p>
-                <button
-                    onClick={onVolverSelector}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all flex items-center gap-2"
-                >
-                    <ArrowLeft size={20} />
-                    Volver al Selector
-                </button>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto animate-fade-in">
             {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-5 flex items-center justify-between">
                 <button
                     onClick={onVolverSelector}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 font-medium text-sm
+                               px-3 py-2 rounded-lg hover:bg-white transition-all"
                 >
-                    <ArrowLeft size={20} />
-                    Cambiar de Línea
+                    <ArrowLeft size={18} />
+                    <span className="hidden sm:inline">Cambiar línea</span>
                 </button>
                 <div className="text-right">
-                    <p className="text-sm text-gray-600">Validando como</p>
-                    <p className="font-bold text-gray-800">{usuario}</p>
+                    <p className="text-xs text-gray-400 font-medium">Validando como</p>
+                    <p className="font-bold text-gray-900 text-sm">{usuario}</p>
                 </div>
             </div>
 
@@ -145,26 +151,42 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, lineaActual = '', onCam
 
             {/* Validación normal */}
             {loading ? (
-                <div className="text-center py-12">
-                    <p className="text-gray-600">Cargando mensajes...</p>
+                <div className="text-center py-16">
+                    <div className="h-10 w-10 mx-auto animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 mb-4"></div>
+                    <p className="text-gray-500 text-sm font-medium">Procesando...</p>
                 </div>
             ) : mensajes.length === 0 ? (
-                <div className="text-center py-12">
-                    <p className="text-gray-600">No hay más mensajes para validar</p>
+                <div className="text-center py-16">
+                    <p className="text-gray-500">No hay más mensajes para validar</p>
                 </div>
             ) : (
                 <>
-                    <div className="mb-4 flex justify-between items-center">
-                        <p className="text-sm text-gray-600">
-                            Pendiente #{currentIndex + 1} de {mensajes.length} (Tanda Actual)
-                        </p>
-                        <p className="text-sm text-gray-600">
-                            Validados hoy: {completedCount}
-                        </p>
+                    {/* Progress Bar */}
+                    <div className="mb-4 bg-white rounded-xl border border-gray-200 p-3 sm:p-4 flex justify-between items-center shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse-soft"></div>
+                                <span className="text-sm font-semibold text-gray-700">
+                                    #{currentIndex + 1} de {mensajes.length}
+                                </span>
+                            </div>
+                            {/* Mini progress bar */}
+                            <div className="hidden sm:flex w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="bg-blue-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${((currentIndex + 1) / mensajes.length) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                            <CheckCircle size={14} className="text-emerald-500" />
+                            <span className="font-medium">{completedCount} validados</span>
+                        </div>
                     </div>
 
                     {mensajeActual && (
                         <MensajeCard
+                            key={mensajeActual.id}
                             mensaje={mensajeActual}
                             onEnviar={handleEnviar}
                             onReportarError={handleReportarError}
@@ -175,31 +197,28 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, lineaActual = '', onCam
 
             {/* Modal detalle mensaje bloqueado */}
             {mostrarDetalleBloqueado && mensajeBloqueadoDetalle && (
-                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
+                        <div className="p-5 sm:p-6">
                             <div className="flex justify-between items-start mb-4">
-                                <h2 className="text-xl font-bold text-gray-800">
-                                    Mensaje Bloqueado - Solo Lectura
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    Mensaje bloqueado
                                 </h2>
                                 <button
                                     onClick={() => setMostrarDetalleBloqueado(false)}
-                                    className="text-gray-500 hover:text-gray-700"
+                                    className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-all"
                                 >
                                     ✕
                                 </button>
                             </div>
 
-                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
-                                <p className="font-bold text-yellow-800 mb-2">
-                                    ⚠️ ESTE MENSAJE ESTÁ BLOQUEADO
+                            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p className="font-bold text-amber-800 mb-2 text-sm">
+                                    ⚠️ Este mensaje requiere revisión con Ariel
                                 </p>
-                                <p className="text-sm text-yellow-700 mb-2">
-                                    Requiere revisión conjunta con Ariel antes de validarlo.
-                                </p>
-                                <div className="p-3 bg-blue-50 rounded border border-blue-200">
-                                    <p className="text-xs font-bold text-blue-700 mb-1">
-                                        EXPLICACIÓN DE ARIEL:
+                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <p className="text-xs font-bold text-blue-600 mb-1">
+                                        Explicación de Ariel:
                                     </p>
                                     <p className="text-sm text-blue-800">
                                         {mensajeBloqueadoDetalle.explicacion_ariel}
@@ -216,9 +235,9 @@ const ValidadorMensajes = ({ mensajesIniciales, usuario, lineaActual = '', onCam
 
                             <button
                                 onClick={() => setMostrarDetalleBloqueado(false)}
-                                className="mt-4 w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold"
+                                className="mt-4 w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-xl font-semibold text-sm transition-all"
                             >
-                                CERRAR
+                                Cerrar
                             </button>
                         </div>
                     </div>

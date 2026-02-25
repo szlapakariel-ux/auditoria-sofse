@@ -966,20 +966,48 @@ def health():
 # ============================================
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend', 'dist')
 
+# MIME types explícitos para archivos estáticos
+MIME_TYPES = {
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.html': 'text/html',
+    '.json': 'application/json',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+}
+
 if os.path.exists(FRONTEND_DIR):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_frontend(path):
         """
-        Sirve el frontend de React.
-        - Si pide un archivo que existe (JS, CSS, imágenes) → lo sirve directo
-        - Si no → devuelve index.html (React Router maneja la ruta)
+        Sirve el frontend de React con MIME types correctos y cache headers.
+        - Archivos en /assets/* → cache largo (tienen hash en nombre)
+        - index.html → sin cache (para que siempre cargue la versión nueva)
         - Las rutas /api/* NO llegan acá porque Flask las resuelve antes
         """
         file_path = os.path.join(FRONTEND_DIR, path)
         if path and os.path.exists(file_path):
-            return send_from_directory(FRONTEND_DIR, path)
-        return send_from_directory(FRONTEND_DIR, 'index.html')
+            # Detectar MIME type correcto
+            ext = os.path.splitext(path)[1].lower()
+            mimetype = MIME_TYPES.get(ext)
+
+            response = send_from_directory(FRONTEND_DIR, path, mimetype=mimetype)
+
+            # Assets con hash → cache largo (1 año)
+            if '/assets/' in path:
+                response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+            return response
+
+        # SPA fallback → index.html sin cache
+        response = send_from_directory(FRONTEND_DIR, 'index.html')
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
