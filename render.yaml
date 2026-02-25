@@ -2,7 +2,7 @@ services:
   - type: web
     name: auditoria-sofse
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "pip install -r requirements.txt && cd frontend && rm -rf dist && npm install && npm run build && cd .."
     startCommand: "gunicorn app:app"
     envVars:
       - key: SECRET_KEY
